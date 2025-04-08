@@ -9,558 +9,762 @@
     <!-- Prism.js CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Rubik+Mono+One&display=swap'); /* Added Rubik Mono One back */
 
+        /* --- Base Variables --- */
         :root {
             --font-geist: 'Geist', system-ui, -apple-system, sans-serif;
             --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --font-fun: 'Rubik Mono One', sans-serif; /* Added fun font */
             --glass-bg: rgba(255, 255, 255, 0.05);
             --glass-border: rgba(255, 255, 255, 0.1);
+            --text-warning-color: #FFC400; /* Default Yellow */
+             /* Default Theme (Dark) */
+            --primary: #ff005c;
+            --secondary: #00b8ff;
+            --accent: #00ff9d;
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --text-primary: #f8f8f8;
+            --text-secondary: #a0a0a0;
         }
 
+        /* --- Base Body Styles --- */
         body {
             font-family: var(--font-geist);
             color: var(--text-primary);
             background-color: var(--bg-primary);
             min-height: 100vh;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            transition: background-color 0.3s ease, color 0.3s ease, background-image 0.5s ease;
+            overflow-x: hidden;
         }
 
-        /* --- Theme Definitions --- */
-        body.theme-dark {
-            --primary: #ff005c; --secondary: #00b8ff; --bg-primary: #0a0a0a; --bg-secondary: #1a1a1a; --text-primary: #f8f8f8; --text-secondary: #a0a0a0;
-            background-image: radial-gradient(at 80% 0%, rgba(255, 0, 92, 0.1) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(0, 184, 255, 0.1) 0px, transparent 50%);
+        /* ===== START LOADING SCREEN STYLES ===== */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-primary);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999; opacity: 1; visibility: visible;
+            transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+            overflow: hidden;
         }
+        #loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loading-container { position: relative; width: 300px; display: flex; flex-direction: column; align-items: center; z-index: 2; opacity: 1; transition: opacity 0.5s ease-out; }
+        #loading-screen.fade-content .loading-container { opacity: 0; }
+        .loading-logo { font-family: var(--font-fun); font-size: 3rem; background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 2rem; text-shadow: 0 0 20px color-mix(in srgb, var(--primary) 30%, transparent); animation: float 3s ease-in-out infinite; position: relative; }
+        .loading-logo::after { content: ''; position: absolute; bottom: -10px; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent)); border-radius: 3px; transform: scaleX(0.2); transform-origin: center; animation: logoUnderline 3s ease-in-out infinite; }
+        @keyframes logoUnderline { 0%, 100% { transform: scaleX(0.2); opacity: 0.5; } 50% { transform: scaleX(1); opacity: 1; } }
+        .loading-bar-container { width: 100%; height: 12px; background-color: rgba(255, 255, 255, 0.1); border-radius: 6px; overflow: hidden; margin-bottom: 1.5rem; position: relative; box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); }
+        .loading-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 6px; transition: width 0.4s ease-out; position: relative; overflow: hidden; }
+        .loading-bar::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%); animation: shimmer 2s infinite linear; transform: translateX(-100%) skewX(-20deg); }
+        @keyframes shimmer { 100% { transform: translateX(100%) skewX(-20deg); } }
+        .loading-percentage { font-family: var(--font-mono); font-size: 1rem; color: var(--text-primary); margin-bottom: 1.5rem; text-align: center; width: 100%; transition: color 0.3s ease; }
+        .loading-text { color: var(--text-secondary); font-size: 0.9rem; text-align: center; max-width: 300px; position: relative; height: 1.2em; transition: opacity 0.2s ease-out; }
+        .loading-text span#loading-message { display: inline-block; transition: opacity 0.2s ease-out; }
+        .loading-dots { display: inline-block; width: 2em; text-align: left; }
+        .loading-dots span { opacity: 0; animation: loading-dots-pulse 1.4s infinite; animation-delay: calc(var(--dot-index) * 0.2s); display: inline-block; color: var(--text-secondary); }
+        @keyframes loading-dots-pulse { 0%, 100% { opacity: 0; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
+        .loading-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0.15; }
+        .loading-particle { position: absolute; width: 2px; height: 2px; background-color: var(--primary); border-radius: 50%; opacity: 0; animation: float-particle-loading 15s infinite linear; will-change: transform, opacity; }
+        @keyframes float-particle-loading { 0% { transform: translateY(100vh) translateX(var(--x-start, 0px)); opacity: 0; } 10%, 90% { opacity: var(--particle-opacity, 0.8); } 100% { transform: translateY(-100px) translateX(var(--x-end, 50px)); opacity: 0; } }
+        .loading-complete { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.6s ease 0.2s; z-index: 3; background-color: var(--bg-primary); }
+        .loading-complete.show { opacity: 1; pointer-events: all; }
+        .loading-complete .checkmark { width: 80px; height: 80px; border-radius: 50%; display: block; stroke-width: 5; stroke: var(--accent); stroke-miterlimit: 10; margin-bottom: 2rem; box-shadow: 0 0 0 0 rgba(0, 255, 157, 0.1); animation: checkmark-scale 0.3s ease-in-out 0.9s both, checkmark-fill 0.4s ease-in-out 0.4s forwards; }
+        .checkmark-circle { stroke-dasharray: 166; stroke-dashoffset: 166; stroke-width: 5; stroke-miterlimit: 10; stroke: var(--accent); fill: none; animation: checkmark-stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+        .checkmark-check { transform-origin: 50% 50%; stroke-dasharray: 48; stroke-dashoffset: 48; animation: checkmark-stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.5s forwards; }
+        @keyframes checkmark-stroke { 100% { stroke-dashoffset: 0; } }
+        @keyframes checkmark-fill { 100% { box-shadow: inset 0 0 0 40px rgba(0, 255, 157, 0.15), 0 0 20px rgba(0, 255, 157, 0.3); } }
+        @keyframes checkmark-scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
+        #enter-site-btn { transition: transform 0.3s ease, box-shadow 0.3s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.2); background: linear-gradient(90deg, var(--primary), var(--secondary)); /* Match gradient */ color: white; padding: 0.75rem 2rem; border-radius: 9999px; font-weight: bold; } /* Styled button */
+        #enter-site-btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 25px color-mix(in srgb, var(--primary) 30%, transparent); }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        /* ===== END LOADING SCREEN STYLES ===== */
+
+
+        /* --- Theme Definitions --- */
         body.theme-purple {
-            --primary: #9c27b0; --secondary: #673ab7; --bg-primary: #0a0a0a; --bg-secondary: #1a1a1a; --text-primary: #f8f8f8; --text-secondary: #a0a0a0;
-            background-image: radial-gradient(at 80% 0%, rgba(156, 39, 176, 0.1) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(103, 58, 183, 0.1) 0px, transparent 50%);
+            --primary: #9c27b0; --secondary: #673ab7; --accent: #ff9800; --bg-primary: #1a0e2a; --bg-secondary: #2a1a3a; --text-primary: #f8f8f8; --text-secondary: #c0b0d0;
+            background-image: radial-gradient(at 80% 0%, rgba(156, 39, 176, 0.15) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(103, 58, 183, 0.15) 0px, transparent 50%), linear-gradient(var(--bg-primary), var(--bg-primary));
+            --text-warning-color: #ff9800;
         }
         body.theme-red {
-            --primary: #880808; --secondary: #B91C1C; --bg-primary: #050505; --bg-secondary: #111111; --text-primary: #e7e7e7; --text-secondary: #909090;
-            background-image: radial-gradient(at 85% 15%, rgba(136, 8, 8, 0.2) 0px, transparent 60%), radial-gradient(at 15% 85%, rgba(185, 28, 28, 0.15) 0px, transparent 70%);
-            background-color: var(--bg-primary);
-            .glass-card { background-color: var(--bg-secondary); border-color: rgba(136, 8, 8, 0.25); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(0,0,0,0.3); }
-            .border-red-500 { border-color: var(--primary); } .text-red-500 { color: var(--secondary); } .bg-red-500\/20 { background-color: color-mix(in srgb, var(--primary) 20%, transparent); }
-            .pulse-warning { animation: creepy-red-pulse 2.5s infinite ease-in-out; box-shadow: none; }
-            a { color: var(--secondary); } a:hover { filter: brightness(1.3); }
+            --primary: #ff1f1f; --secondary: #ff5252; --accent: #ff8a80; --bg-primary: #100505; --bg-secondary: #1f0a0a; --text-primary: #ffe0e0; --text-secondary: #ffb0b0; --text-warning-color: #ffc107;
+            background-image: radial-gradient(at 90% 10%, rgba(255, 31, 31, 0.25) 0px, transparent 60%), radial-gradient(at 10% 90%, rgba(255, 82, 82, 0.15) 0px, transparent 70%), linear-gradient(var(--bg-primary), var(--bg-primary));
+            /* ... other red theme specific overrides ... */
+            .glass-card { background-color: var(--bg-secondary); border-color: rgba(255, 31, 31, 0.3); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 25px rgba(0,0,0,0.4), 0 0 15px rgba(255, 31, 31, 0.2); }
+            .border-red-500 { border-color: var(--primary) !important; } .text-red-500 { color: var(--secondary) !important; } .bg-red-500\/20 { background-color: color-mix(in srgb, var(--primary) 20%, transparent) !important; }
+            .pulse-warning { animation: creepy-red-pulse 2.5s infinite ease-in-out; box-shadow: none; border-color: var(--text-warning-color); }
+            a { color: var(--secondary); } a:hover { color: var(--accent); filter: brightness(1.3); }
             #volume-slider { accent-color: var(--primary); } #volume-slider::-webkit-slider-thumb { background-color: var(--text-primary); }
-            #volume-slider::-webkit-slider-thumb { background-color: var(--text-primary); }
             .copy-btn { background-color: color-mix(in srgb, var(--secondary) 40%, #000 30%); color: var(--text-primary); } .copy-btn:hover { background-color: color-mix(in srgb, var(--secondary) 60%, #000 20%); } .copy-btn.copied { background-color: color-mix(in srgb, var(--primary) 60%, #000 20%); }
-            strong[style*="#FF5252"] { color: var(--secondary); } /* Specifically targets the old inline style */
-            strong[style*="color: var(--secondary)"] { color: var(--secondary); } /* General rule for theme-based strong tags */
-            pre.code-block { background: rgba(0, 0, 0, 0.5) !important; }
+            strong[style*="#FF5252"] { color: var(--secondary) !important; } strong[style*="color: var(--secondary)"] { color: var(--secondary) !important; } strong[style*="#FFC400"] { color: var(--text-warning-color) !important; }
+            pre.code-block { background: rgba(10, 0, 0, 0.7) !important; border-left-color: var(--secondary) !important; }
+            .text-yellow-500 { color: var(--text-warning-color) !important; } .bg-yellow-500\/20 { background-color: color-mix(in srgb, var(--text-warning-color) 20%, transparent) !important; }
+             .fa-caret-right[style*="#FFC107"] { color: var(--text-warning-color) !important; } .fa-skull-crossbones[style*="var(--secondary)"] { color: var(--secondary) !important; } span[style*="var(--secondary)"] { color: var(--secondary) !important; }
+             span[style*="color-mix(in srgb, var(--secondary) 70%, transparent)"] { color: var(--text-secondary) !important; }
         }
         body.theme-blue {
-            --primary: #2196f3; --secondary: #00bcd4; --bg-primary: #0a0a0a; --bg-secondary: #1a1a1a; --text-primary: #f8f8f8; --text-secondary: #a0a0a0;
-            background-image: radial-gradient(at 80% 0%, rgba(33, 150, 243, 0.1) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(0, 188, 212, 0.1) 0px, transparent 50%);
+            --primary: #2196f3; --secondary: #00bcd4; --accent: #80d8ff; --bg-primary: #051a2a; --bg-secondary: #0a2a3f; --text-primary: #e0f7ff; --text-secondary: #b0e0ff;
+            background-image: radial-gradient(at 80% 0%, rgba(33, 150, 243, 0.15) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(0, 188, 212, 0.15) 0px, transparent 50%), linear-gradient(var(--bg-primary), var(--bg-primary));
+            --text-warning-color: #ffab40;
         }
         body.theme-matrix {
-            --primary: #00ff41; --secondary: #008f11; --bg-primary: #000000; --bg-secondary: #0a0a0a; --text-primary: #00ff41; --text-secondary: #008f11;
-            background-image: radial-gradient(at 80% 0%, rgba(0, 255, 65, 0.1) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(0, 143, 17, 0.1) 0px, transparent 50%);
-            background-color: #000;
-            .glass-card { background: rgba(0, 20, 0, 0.1); border-color: rgba(0, 255, 65, 0.2); background-color: var(--bg-secondary); }
-            .tab-active { background: rgba(0, 255, 65, 0.1); }
-            pre.code-block { background: rgba(0, 0, 0, 0.6) !important; border-left-color: var(--secondary); }
-            a { color: var(--primary); } .text-blue-400, .text-red-400, .text-yellow-400, .text-green-400, .text-purple-400 { color: var(--primary) !important; }
+            --primary: #00ff41; --secondary: #39ff14; --accent: #b0ff9e; --bg-primary: #000a00; --bg-secondary: #001a05; --text-primary: #39ff14; --text-secondary: #00a030;
+            background-image: radial-gradient(at 80% 0%, rgba(0, 255, 65, 0.15) 0px, transparent 50%), radial-gradient(at 0% 50%, rgba(0, 143, 17, 0.1) 0px, transparent 50%), linear-gradient(var(--bg-primary), var(--bg-primary));
+            background-color: #000; --text-warning-color: #f0f000;
+            /* ... other matrix theme specific overrides ... */
+            .glass-card { background: rgba(0, 20, 0, 0.15); border-color: rgba(0, 255, 65, 0.25); background-color: var(--bg-secondary); box-shadow: 0 8px 32px rgba(0, 40, 0, 0.3), inset 0 0 10px rgba(0,0,0,0.2); }
+             .tab-active { background: rgba(0, 255, 65, 0.1); } pre.code-block { background: rgba(0, 0, 0, 0.7) !important; border-left-color: var(--secondary) !important; color: var(--secondary); }
+             pre.code-block code { color: var(--text-primary); } a { color: var(--primary); } a:hover { color: var(--accent); filter: brightness(1.4); }
+             .text-blue-400, .text-red-400, .text-yellow-400, .text-green-400, .text-purple-400, .text-orange-500 { color: var(--primary) !important; }
              .bg-yellow-400\/20, .bg-red-500\/20, .bg-blue-500\/20, .bg-green-500\/20, .bg-purple-500\/20, .bg-orange-500\/20 { background-color: color-mix(in srgb, var(--secondary) 20%, transparent) !important; }
-             .text-yellow-400, .text-red-500, .text-blue-400, .text-green-500, .text-purple-500, .text-orange-500 { color: var(--primary) !important; }
+             .text-yellow-400, .text-red-500, .text-blue-400, .text-green-500, .text-purple-500, .text-yellow-500 { color: var(--primary) !important; }
              .border-yellow-400, .border-red-500, .border-blue-400, .border-green-500 { border-color: var(--secondary) !important; }
+             .pulse-warning { border-color: var(--text-warning-color); animation: matrix-pulse 1.5s infinite; } strong[style*="#FFC400"] { color: var(--text-warning-color) !important; }
+             .fa-caret-right[style*="#FFC107"] { color: var(--text-warning-color) !important; } strong[style*="var(--secondary)"] { color: var(--accent) !important; }
+             .fa-skull-crossbones[style*="var(--secondary)"] { color: var(--secondary) !important; } span[style*="var(--secondary)"] { color: var(--secondary) !important; }
+             span[style*="color-mix(in srgb, var(--secondary) 70%, transparent)"] { color: var(--text-secondary) !important; }
+             h1, h2, h3, h4, th { font-family: var(--font-mono); text-shadow: 0 0 5px var(--primary); } p, li, td, label, dd { font-family: var(--font-mono); }
         }
         /* --- End Theme Definitions --- */
 
-        .glass-card { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); transition: all 0.3s ease; background-color: var(--bg-secondary); border-radius: 1rem; }
-        .tab-active { position: relative; color: var(--text-primary) !important; background: rgba(255, 255, 255, 0.1); border-radius: 0.75rem; }
-        .tab-active::after { content: ''; position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); width: 80%; height: 3px; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 3px; }
-        .gradient-text { background: linear-gradient(90deg, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        /* --- Core Component Styles --- */
+        /* ... Keep existing .glass-card, .tab-btn, .tab-active, .gradient-text styles ... */
+        .glass-card { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); transition: all 0.3s ease; background-color: var(--bg-secondary); border-radius: 1rem; }
+        .tab-btn { padding: 0.75rem 1.5rem; border-radius: 0.75rem; font-weight: 500; transition: all 0.2s ease-in-out; white-space: nowrap; flex-shrink: 0; color: var(--text-secondary); }
+        .tab-btn:hover:not(.tab-active) { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); transform: translateY(-2px); }
+        .tab-active { position: relative; color: var(--text-primary) !important; background: var(--glass-bg); border: 1px solid var(--glass-border); box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .tab-active::after { content: ''; position: absolute; bottom: -1px; left: 10%; width: 80%; height: 3px; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 3px; transition: all 0.3s ease; }
+        .gradient-text { background: linear-gradient(90deg, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; color: transparent; background-size: 200% auto; animation: gradient-shift 4s ease infinite alternate; }
+        @keyframes gradient-shift { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
 
-        pre[class*="language-"].code-block { font-family: var(--font-mono) !important; border-left: 3px solid var(--secondary); transition: all 0.3s ease; margin: 1em 0; padding: 1em; border-radius: 0.5rem; position: relative; background: rgba(0, 0, 0, 0.3); font-size: 0.875rem; color: var(--text-secondary); overflow: auto; }
-        body.theme-dark pre[class*="language-"].code-block, body.theme-purple pre[class*="language-"].code-block, body.theme-blue pre[class*="language-"].code-block { background: rgba(0,0,0, 0.4) !important; }
-        pre[class*="language-"].code-block code { color: inherit; font-family: inherit; background: none; text-shadow: none; }
+        /* --- Code Block Styles --- */
+        /* ... Keep existing pre.code-block, code, .copy-btn styles ... */
+        pre[class*="language-"].code-block { font-family: var(--font-mono) !important; border-left: 3px solid var(--secondary); transition: all 0.3s ease; margin: 1em 0; padding: 1em; border-radius: 0.5rem; position: relative; background: rgba(0, 0, 0, 0.3); font-size: 0.875rem; color: var(--text-secondary); overflow: auto; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
+        body.theme-dark pre[class*="language-"].code-block, body.theme-purple pre[class*="language-"].code-block, body.theme-blue pre[class*="language-"].code-block { background: rgba(0,0,0, 0.45) !important; }
+        pre[class*="language-"].code-block code { color: var(--text-primary); font-family: inherit; background: none; text-shadow: none; }
+        .copy-btn { position: absolute; top: 0.6rem; right: 0.6rem; padding: 0.3rem 0.7rem; font-size: 0.75rem; background-color: color-mix(in srgb, var(--secondary) 40%, transparent); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.3rem; cursor: pointer; opacity: 0.5; transition: all 0.2s ease; z-index: 10; }
+        pre[class*="language-"].code-block:hover .copy-btn { opacity: 1; } .copy-btn:hover { background-color: color-mix(in srgb, var(--secondary) 60%, transparent); transform: scale(1.05); border-color: rgba(255,255,255,0.2); } .copy-btn.copied { background-color: color-mix(in srgb, var(--primary) 60%, transparent); border-color: rgba(255,255,255,0.1); }
 
-        .copy-btn { position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.3rem 0.6rem; font-size: 0.75rem; background-color: color-mix(in srgb, var(--secondary) 50%, transparent); color: var(--text-primary); border: none; border-radius: 0.3rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s ease, background-color 0.2s ease; z-index: 10; }
-        pre[class*="language-"].code-block:hover .copy-btn { opacity: 1; } .copy-btn:hover { background-color: color-mix(in srgb, var(--secondary) 70%, transparent); } .copy-btn.copied { background-color: color-mix(in srgb, var(--primary) 70%, transparent); }
+        /* --- Pulse Animations --- */
+        /* ... Keep existing .pulse-warning, @keyframes pulse, @keyframes creepy-red-pulse, @keyframes matrix-pulse ... */
+        .pulse-warning { animation: pulse 2s infinite; border-color: var(--text-warning-color); }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--text-warning-color) 70%, transparent); } 70% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--text-warning-color) 0%, transparent); } }
+        @keyframes creepy-red-pulse { 0%, 100% { box-shadow: 0 0 5px 0 color-mix(in srgb, var(--primary) 50%, transparent), 0 0 0 0 color-mix(in srgb, var(--primary) 50%, transparent); } 70% { box-shadow: 0 0 15px 5px color-mix(in srgb, var(--primary) 20%, transparent), 0 0 0 12px color-mix(in srgb, var(--primary) 0%, transparent); } }
+        @keyframes matrix-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--text-warning-color) 80%, transparent); border-color: var(--text-warning-color); } 50% { box-shadow: 0 0 8px 4px color-mix(in srgb, var(--text-warning-color) 30%, transparent); border-color: color-mix(in srgb, var(--text-warning-color) 50%, transparent); } }
 
-        .pulse-warning { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 196, 0, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(255, 196, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 196, 0, 0); } }
-        @keyframes creepy-red-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 50%, transparent); } 70% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--primary) 0%, transparent); } 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent); } }
+        /* --- Scrollbar & Transitions --- */
+        /* ... Keep existing scrollbar, .tab-content, @keyframes fadeIn, .theme-btn styles ... */
+         ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); } ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-primary) 10%, transparent); border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text-primary) 20%, transparent); }
+        .tab-content { animation: fadeIn 0.4s ease forwards; } @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        .theme-btn { transition: all 0.3s ease; perspective: 800px; }
+        .theme-btn:hover { transform: scale(1.1) rotateY(5deg); box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
+        .theme-btn.active { box-shadow: 0 0 15px color-mix(in srgb, var(--primary) 40%, white 10%), inset 0 0 0 2px color-mix(in srgb, var(--primary) 80%, white 30%); transform: scale(1.05); border: 1px solid var(--primary); }
 
-        ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); } ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--text-primary) 10%, transparent); border-radius: 4px; } ::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--text-primary) 20%, transparent); }
-        .tab-content { animation: fadeIn 0.3s ease forwards; } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .theme-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
-        .theme-btn.active { box-shadow: 0 0 15px color-mix(in srgb, var(--primary) 40%, white 10%), inset 0 0 0 2px color-mix(in srgb, var(--primary) 80%, white 30%); transform: scale(1.05); }
-        .tab-btn:not(.tab-active) { color: var(--text-secondary); } .tab-btn:hover:not(.tab-active) { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); }
-        tbody tr { transition: all 0.2s ease-out; } tr.hover\:bg-white\/5:hover { background-color: rgba(255, 255, 255, 0.05); transform: translateX(5px); }
-        h1, h2, h3, h4, th { color: var(--text-primary); } p, li, td, label { color: var(--text-secondary); } strong { color: var(--text-primary); } a { color: var(--secondary); } a:hover { filter: brightness(1.2); }
+        /* --- Table & Text Styles --- */
+        /* ... Keep existing table, text, link styles ... */
+         tbody tr { transition: all 0.2s ease-out; } tr.hover\:bg-white\/5:hover { background-color: rgba(255, 255, 255, 0.05); transform: translateX(5px); }
+        h1, h2, h3, h4, th { color: var(--text-primary); font-weight: 600; } p, li, td, label, dd { color: var(--text-secondary); line-height: 1.6; } strong { color: var(--text-primary); font-weight: 600; } a { color: var(--secondary); text-decoration: none; position: relative; }
+        a:hover { color: var(--primary); filter: brightness(1.2); }
+         a::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 1px; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width 0.3s ease; }
+         a:hover::after { width: 100%; }
         .text-gray-300 { color: var(--text-secondary); } .text-gray-400 { color: color-mix(in srgb, var(--text-secondary) 80%, var(--bg-primary)); } .text-white { color: var(--text-primary); }
         .bg-white\/10 { background-color: color-mix(in srgb, var(--text-primary) 10%, transparent); } .hover\:bg-white\/20:hover { background-color: color-mix(in srgb, var(--text-primary) 20%, transparent); }
         thead tr { border-bottom-color: color-mix(in srgb, var(--text-primary) 10%, transparent); } tbody { border-color: color-mix(in srgb, var(--text-primary) 5%, transparent); } tbody.divide-y > :not([hidden]) ~ :not([hidden]) { border-top-color: color-mix(in srgb, var(--text-primary) 5%, transparent); }
 
-        #glossary-panel dt { font-weight: bold; color: var(--text-primary); margin-top: 1rem; border-left: 3px solid var(--primary); padding-left: 0.75rem; }
+        /* --- Glossary Specific Styles --- */
+        /* ... Keep existing glossary styles ... */
+         #glossary-panel dt { font-weight: bold; color: var(--text-primary); margin-top: 1rem; border-left: 3px solid var(--primary); padding-left: 0.75rem; }
         #glossary-panel dd { margin-left: calc(0.75rem + 3px); padding-left: 0.75rem; margin-bottom: 0.5rem; color: var(--text-secondary); border-left: 1px dashed color-mix(in srgb, var(--secondary) 50%, transparent); }
-        #glossary-panel code { font-family: var(--font-mono); background-color: color-mix(in srgb, var(--secondary) 15%, transparent); color: var(--text-primary); padding: 0.1em 0.4em; border-radius: 0.25rem; font-size: 0.9em; }
+        #glossary-panel code, .inline-code { font-family: var(--font-mono); background-color: color-mix(in srgb, var(--secondary) 15%, transparent); color: var(--text-primary); padding: 0.15em 0.4em; border-radius: 0.25rem; font-size: 0.9em; display: inline-block; line-height: 1.2; border: 1px solid color-mix(in srgb, var(--secondary) 25%, transparent); }
 
-        /* --- Glitch Effect Styles --- */
-        @keyframes glitch-anim-1 { 0% { clip-path: inset(3% 0 94% 0); } 5% { clip-path: inset(45% 0 45% 0); } 10% { clip-path: inset(9% 0 81% 0); } 15% { clip-path: inset(87% 0 2% 0); } 20% { clip-path: inset(41% 0 48% 0); } 25% { clip-path: inset(13% 0 75% 0); } 30% { clip-path: inset(67% 0 11% 0); } 35% { clip-path: inset(40% 0 41% 0); } 40% { clip-path: inset(94% 0 3% 0); } 45% { clip-path: inset(21% 0 73% 0); } 50% { clip-path: inset(8% 0 82% 0); } 55% { clip-path: inset(78% 0 18% 0); } 60% { clip-path: inset(39% 0 52% 0); } 65% { clip-path: inset(11% 0 80% 0); } 70% { clip-path: inset(89% 0 8% 0); } 75% { clip-path: inset(49% 0 42% 0); } 80% { clip-path: inset(4% 0 91% 0); } 85% { clip-path: inset(72% 0 14% 0); } 90% { clip-path: inset(44% 0 46% 0); } 95% { clip-path: inset(84% 0 7% 0); } 100% { clip-path: inset(29% 0 69% 0); } }
-        @keyframes glitch-anim-2 { 0% { clip-path: inset(76% 0 9% 0); } 5% { clip-path: inset(12% 0 82% 0); } 10% { clip-path: inset(88% 0 5% 0); } 15% { clip-path: inset(30% 0 64% 0); } 20% { clip-path: inset(95% 0 2% 0); } 25% { clip-path: inset(58% 0 31% 0); } 30% { clip-path: inset(21% 0 74% 0); } 35% { clip-path: inset(81% 0 12% 0); } 40% { clip-path: inset(33% 0 58% 0); } 45% { clip-path: inset(91% 0 4% 0); } 50% { clip-path: inset(60% 0 33% 0); } 55% { clip-path: inset(16% 0 79% 0); } 60% { clip-path: inset(83% 0 1% 0); } 65% { clip-path: inset(37% 0 55% 0); } 70% { clip-path: inset(97% 0 1% 0); } 75% { clip-path: inset(68% 0 28% 0); } 80% { clip-path: inset(24% 0 71% 0); } 85% { clip-path: inset(85% 0 10% 0); } 90% { clip-path: inset(42% 0 51% 0); } 95% { clip-path: inset(78% 0 15% 0); } 100% { clip-path: inset(31% 0 65% 0); } }
-
-        body.theme-red h1#main-title,
-        body.theme-red header h2 { position: relative; }
-        body.theme-red h1#main-title::before, body.theme-red h1#main-title::after, body.theme-red header h2::before, body.theme-red header h2::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-primary); overflow: hidden; user-select: none; }
-        body.theme-red h1#main-title::before, body.theme-red header h2::before { left: 2px; color: var(--secondary); animation: glitch-anim-1 2.5s infinite linear alternate-reverse; z-index: 2; }
+        /* --- Glitch Effect Styles (Specific to Red Theme) --- */
+        /* ... Keep existing glitch keyframes and red theme glitch styles ... */
+        @keyframes glitch-anim-1 { 0% { clip-path: inset(3% 0 94% 0); transform: translateX(-1px); } 5% { clip-path: inset(45% 0 45% 0); transform: translateX(1px); } 10% { clip-path: inset(9% 0 81% 0); transform: translateX(-2px); } 15% { clip-path: inset(87% 0 2% 0); transform: translateX(2px); } 20% { clip-path: inset(41% 0 48% 0); transform: translateX(-1px); } 25% { clip-path: inset(13% 0 75% 0); transform: translateX(1px); } 30% { clip-path: inset(67% 0 11% 0); transform: translateX(-2px); } 35% { clip-path: inset(40% 0 41% 0); transform: translateX(1px); } 40% { clip-path: inset(94% 0 3% 0); transform: translateX(-1px); } 45% { clip-path: inset(21% 0 73% 0); transform: translateX(2px); } 50% { clip-path: inset(8% 0 82% 0); transform: translateX(-2px); } 55% { clip-path: inset(78% 0 18% 0); transform: translateX(1px); } 60% { clip-path: inset(39% 0 52% 0); transform: translateX(-1px); } 65% { clip-path: inset(11% 0 80% 0); transform: translateX(2px); } 70% { clip-path: inset(89% 0 8% 0); transform: translateX(-2px); } 75% { clip-path: inset(49% 0 42% 0); transform: translateX(1px); } 80% { clip-path: inset(4% 0 91% 0); transform: translateX(-1px); } 85% { clip-path: inset(72% 0 14% 0); transform: translateX(2px); } 90% { clip-path: inset(44% 0 46% 0); transform: translateX(-1px); } 95% { clip-path: inset(84% 0 7% 0); transform: translateX(1px); } 100% { clip-path: inset(29% 0 69% 0); transform: translateX(-2px); } }
+        @keyframes glitch-anim-2 { 0% { clip-path: inset(76% 0 9% 0); transform: translateX(1px); } 5% { clip-path: inset(12% 0 82% 0); transform: translateX(-1px); } 10% { clip-path: inset(88% 0 5% 0); transform: translateX(2px); } 15% { clip-path: inset(30% 0 64% 0); transform: translateX(-2px); } 20% { clip-path: inset(95% 0 2% 0); transform: translateX(1px); } 25% { clip-path: inset(58% 0 31% 0); transform: translateX(-1px); } 30% { clip-path: inset(21% 0 74% 0); transform: translateX(2px); } 35% { clip-path: inset(81% 0 12% 0); transform: translateX(-2px); } 40% { clip-path: inset(33% 0 58% 0); transform: translateX(1px); } 45% { clip-path: inset(91% 0 4% 0); transform: translateX(-1px); } 50% { clip-path: inset(60% 0 33% 0); transform: translateX(2px); } 55% { clip-path: inset(16% 0 79% 0); transform: translateX(-2px); } 60% { clip-path: inset(83% 0 1% 0); transform: translateX(1px); } 65% { clip-path: inset(37% 0 55% 0); transform: translateX(-1px); } 70% { clip-path: inset(97% 0 1% 0); transform: translateX(2px); } 75% { clip-path: inset(68% 0 28% 0); transform: translateX(-2px); } 80% { clip-path: inset(24% 0 71% 0); transform: translateX(1px); } 85% { clip-path: inset(85% 0 10% 0); transform: translateX(-1px); } 90% { clip-path: inset(42% 0 51% 0); transform: translateX(2px); } 95% { clip-path: inset(78% 0 15% 0); transform: translateX(-1px); } 100% { clip-path: inset(31% 0 65% 0); transform: translateX(2px); } }
+        body.theme-red h1#main-title, body.theme-red header h2 { position: relative; }
+        body.theme-red h1#main-title::before, body.theme-red h1#main-title::after, body.theme-red header h2::before, body.theme-red header h2::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-primary); overflow: hidden; user-select: none; pointer-events: none; }
+        body.theme-red h1#main-title::before, body.theme-red header h2::before { left: 2px; color: var(--secondary); animation: glitch-anim-1 2.5s infinite linear alternate-reverse; z-index: -1; text-shadow: 2px 0 var(--primary); }
         body.theme-red h1#main-title::before { background: linear-gradient(90deg, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; }
-        body.theme-red h1#main-title::after, body.theme-red header h2::after { left: -2px; color: var(--primary); animation: glitch-anim-2 1.8s infinite linear alternate-reverse; z-index: 3; }
+        body.theme-red h1#main-title::after, body.theme-red header h2::after { left: -2px; color: var(--primary); animation: glitch-anim-2 1.8s infinite linear alternate-reverse; z-index: -2; text-shadow: -2px 0 var(--secondary); }
         body.theme-red h1#main-title::after { background: linear-gradient(90deg, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; }
         body.theme-red h1#main-title { z-index: 1; background: linear-gradient(90deg, var(--primary), var(--secondary)); -webkit-background-clip: text; background-clip: text; color: transparent; }
         body.theme-red header h2 { z-index: 1; color: var(--text-secondary); }
         /* --- End Glitch Effect Styles --- */
 
         /* --- Conditional Music Controls Visibility & Animation --- */
-        @keyframes pop-in-bubble { 0% { opacity: 0; transform: scale(0.5) translateY(20px); } 60% { transform: scale(1.1) translateY(-5px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        /* ... Keep existing music controls styles ... */
+         @keyframes pop-in-bubble { 0% { opacity: 0; transform: scale(0.5) translateY(20px); } 60% { transform: scale(1.1) translateY(-5px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
         #music-controls-container { opacity: 0; transform: scale(0.8) translateY(10px); pointer-events: none; transition: opacity 0.3s ease-out, transform 0.3s ease-out; will-change: transform, opacity; }
-        body.theme-red #music-controls-container { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; animation: pop-in-bubble 0.4s ease-out forwards; }
-        /* --- End Conditional Music Controls --- */
+        body.theme-red #music-controls-container { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; animation: pop-in-bubble 0.4s ease-out forwards 0.1s; }
 
-        /* Utility to style inline code in security tips etc. */
-         .inline-code {
-            font-family: var(--font-mono);
-            background-color: color-mix(in srgb, var(--secondary) 15%, transparent);
-            color: var(--text-primary);
-            padding: 0.1em 0.4em;
-            border-radius: 0.25rem;
-            font-size: 0.9em;
-         }
+        /* Scrollbar Hiding Utility */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* --- Particle Background --- */
+         .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -10; /* Behind everything */ overflow: hidden; pointer-events: none; } /* Added pointer-events */
+         .particle { /* Main site particles */ position: absolute; width: 2px; height: 2px; background-color: var(--primary); border-radius: 50%; opacity: 0; animation: float-particle-main 20s infinite linear; will-change: transform, opacity; }
+         @keyframes float-particle-main { 0% { transform: translateY(100vh) translateX(var(--x-start, 0px)); opacity: 0; } 10% { opacity: var(--particle-opacity, 0.6); } 50% { opacity: var(--particle-opacity-mid, 0.4); } 95% { opacity: var(--particle-opacity-end, 0.1); } 100% { transform: translateY(-100px) translateX(var(--x-end, 50px)); opacity: 0; } }
 
     </style>
 </head>
 <body class="theme-dark">
-    <audio id="background-music" src="https://files.catbox.moe/z1pz8a.mp3" loop preload="metadata"></audio>
 
-    <div class="container mx-auto px-4 py-8 max-w-7xl min-h-screen flex flex-col">
-        <!-- Floating controls -->
-        <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
-            <!-- Theme buttons -->
-            <div class="glass-card rounded-full p-2 flex flex-col gap-2">
-                <button data-theme="dark" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#ff005c] to-[#00b8ff] flex items-center justify-center text-white transition-all duration-300"><i class="fas fa-moon"></i></button>
-                <button data-theme="purple" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#9c27b0] to-[#673ab7] flex items-center justify-center text-white transition-all duration-300"><i class="fas fa-hat-wizard"></i></button>
-                <button data-theme="red" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#880808] to-[#B91C1C] flex items-center justify-center text-white transition-all duration-300"><i class="fas fa-fire"></i></button>
-                <button data-theme="blue" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#2196f3] to-[#00bcd4] flex items-center justify-center text-white transition-all duration-300"><i class="fas fa-droplet"></i></button>
-                <button data-theme="matrix" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#00ff41] to-[#008f11] flex items-center justify-center text-black transition-all duration-300"><i class="fas fa-terminal"></i></button>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-background" id="loading-background"></div>
+        <div class="loading-container">
+            <div class="loading-logo">CHARA'S GUIDE</div>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loading-progress"></div>
             </div>
-            <!-- Music controls (Now conditionally visible via CSS) -->
-            <div id="music-controls-container" class="glass-card rounded-full p-2 flex flex-col gap-2">
-                <button id="music-toggle-btn" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all"><i id="music-icon" class="fas fa-play"></i></button>
-                <input type="range" id="volume-slider" class="w-10 h-1 bg-white/20 rounded-full appearance-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white" min="0" max="1" step="0.05" value="0.25" style="accent-color: var(--primary);">
-            </div>
-        </div>
-
-        <!-- Header -->
-        <header class="text-center mb-12">
-             <div class="glass-card rounded-2xl p-8 mb-6 hover:shadow-lg hover:shadow-[var(--primary)]/20 transition-all duration-300">
-                 <h1 id="main-title"
-                     class="text-5xl md:text-6xl font-bold mb-4 gradient-text"
-                     data-text="Chara's Ultimate Roblox Exploit Guide">
-                     Chara's Ultimate Roblox Exploit Guide
-                 </h1>
-                 <h2 class="text-lg font-medium"
-                     data-text="Created by an r/robloxhackers Moderator • Updated April 2024 • AD-FREE">
-                     Created by an r/robloxhackers Moderator • Updated April 2024 • AD-FREE
-                 </h2>
-             </div>
-             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                 <div class="glass-card rounded-xl p-6 border-l-4 border-yellow-400 pulse-warning hover:scale-[1.02] transition-all duration-300">
-                     <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-full bg-yellow-400/20 flex items-center justify-center text-yellow-400"><i class="fas fa-user-shield"></i></div><h3 class="text-xl font-bold">Use Alt Accounts!</h3></div>
-                     <p><strong style="color: #FFC400;">ALWAYS test exploits and scripts on a secondary account first.</strong> Never risk your main account. Protect your primary account and its assets above all else.</p>
-                 </div>
-                 <div class="glass-card rounded-xl p-6 border-l-4 border-red-500 hover:scale-[1.02] transition-all duration-300">
-                     <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-biohazard"></i></div><h3 class="text-xl font-bold">Untrusted Sources</h3></div>
-                     <p><strong style="color: var(--secondary);">NEVER download executors or scripts from untrusted sources.</strong> Always verify files using the tools recommended below before running anything.</p>
-                 </div>
-                 <div class="glass-card rounded-xl p-6 border-l-4 border-blue-400 hover:scale-[1.02] transition-all duration-300">
-                     <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-full bg-blue-400/20 flex items-center justify-center text-blue-400"><i class="fas fa-info-circle"></i></div><h3 class="text-xl font-bold">Creator's Note</h3></div>
-                     <p>Exploits may be more noticeable in pay-to-win games. Consider avoiding use in competitive FPS games to prevent negatively impacting others' experience.</p>
-                 </div>
-             </div>
-        </header>
-
-        <!-- Navigation Tabs -->
-        <div class="glass-card rounded-xl p-1 mb-8 overflow-x-auto scrollbar-hide">
-            <div class="flex space-x-1">
-                <button data-tab="verification" class="tab-btn px-6 py-3 transition-all duration-300"><i class="fas fa-shield-alt mr-2"></i> Verification</button>
-                <button data-tab="malware" class="tab-btn px-6 py-3 transition-all duration-300"><i class="fas fa-bug mr-2"></i> Malware Signs</button>
-                <button data-tab="security" class="tab-btn px-6 py-3 transition-all duration-300"><i class="fas fa-lock mr-2"></i> Security Tips</button>
-                <button data-tab="executors-free" class="tab-btn px-6 py-3 transition-all duration-300"><i class="fas fa-desktop mr-2"></i> Free Executors</button>
-                <button data-tab="executors-mobile" class="tab-btn px-6 py-3 transition-all duration-300"><i class="fas fa-mobile-alt mr-2"></i> Mobile</button>
-                <button data-tab="executors-paid" class="tab-btn px-6 py-3 transition-all duration-300"><i class="fas fa-dollar-sign mr-2"></i> Paid</button>
-                <button data-tab="scripts" class="tab-btn px-6 py-3 transition-all duration-300"><i class="fas fa-scroll mr-2"></i> Script Hubs</button>
-                <button data-tab="glossary" class="tab-btn px-6 py-3 transition-all duration-300"><i class="fas fa-book mr-2"></i> Glossary</button>
+            <div class="loading-percentage" id="loading-percentage">0%</div>
+            <div class="loading-text">
+                <span id="loading-message">Initializing exploit database</span>
+                <span class="loading-dots">
+                    <span style="--dot-index: 0;">.</span>
+                    <span style="--dot-index: 1;">.</span>
+                    <span style="--dot-index: 2;">.</span>
+                </span>
             </div>
         </div>
+        <div class="loading-complete" id="loading-complete">
+            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+            </svg>
+            <div class="loading-logo">READY TO EXPLOIT</div>
+            <button id="enter-site-btn"> ENTER SITE </button>
+        </div>
+    </div>
+    <!-- End Loading Screen -->
 
-        <!-- Tab Contents -->
-        <main class="glass-card rounded-2xl p-8 flex-grow hover:shadow-lg hover:shadow-[var(--primary)]/10 transition-all duration-300">
-            <!-- Verification Tab -->
-            <div id="verification-panel" class="tab-content">
-                 <div class="flex items-center gap-4 mb-8"><div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white"><i class="fas fa-shield-alt text-xl"></i></div><h2 class="text-3xl font-bold">Verifying Files: Quick Virus Check Guide</h2></div>
-                 <p class="mb-6">Scan any downloaded files with these tools <strong>BEFORE</strong> executing them:</p>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-check"></i></div><h3 class="text-xl font-bold">Triage</h3></div><p class="mb-4">Fast sandbox analysis with detailed behavior reports.</p><a href="https://tria.ge" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white">Visit Site <i class="fas fa-external-link-alt text-xs"></i></a></div>
-                    <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500"><i class="fas fa-shield-virus"></i></div><h3 class="text-xl font-bold">Any.run</h3></div><p class="mb-4">Interactive behavior tracking with real-time analysis.</p><a href="https://any.run" target="_blank" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white">Visit Site <i class="fas fa-external-link-alt text-xs"></i></a></div>
-                 </div>
-                <pre class="code-block language-lua"><code>-- Always combine scans with cautious judgment
--- Never skip verification steps</code></pre>
-                <div class="glass-card rounded-xl p-6 mt-8 border-l-4 border-[var(--secondary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-[var(--secondary)]/20 flex items-center justify-center text-[var(--secondary)]"><i class="fas fa-lightbulb"></i></div><h3 class="text-xl font-bold">Pro Tips</h3></div><ul class="list-disc pl-5 space-y-2"><li>Upload suspicious files to multiple scanners for cross-verification</li><li>Check file hashes (MD5, SHA-1, SHA-256) against known malware databases</li><li>Monitor network activity when running new software</li><li>Use virtual machines for testing potentially dangerous files</li></ul></div>
+     <!-- Audio element -->
+     <audio id="background-music" src="https://files.catbox.moe/12idr6.mp3" loop preload="metadata"></audio>
+
+    <!-- Wrapper for main site content -->
+    <div id="site-content" style="opacity: 0; transition: opacity 0.5s ease-in;">
+
+        <!-- Particle Background for Main Site -->
+        <div class="particles" id="particles"></div>
+
+        <!-- Main page container -->
+        <div class="container mx-auto px-4 py-8 max-w-7xl min-h-screen flex flex-col">
+
+            <!-- Floating controls container -->
+            <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+                <!-- Theme buttons -->
+                 <div class="glass-card rounded-full p-2 flex flex-col gap-2 shadow-lg">
+                    <button data-theme="dark" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#ff005c] to-[#00b8ff] flex items-center justify-center text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-secondary)] focus:ring-[var(--primary)]"><i class="fas fa-moon"></i></button>
+                    <button data-theme="purple" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#9c27b0] to-[#673ab7] flex items-center justify-center text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-secondary)] focus:ring-[var(--primary)]"><i class="fas fa-hat-wizard"></i></button>
+                    <button data-theme="red" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#ff1f1f] to-[#ff5252] flex items-center justify-center text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-secondary)] focus:ring-[var(--primary)]"><i class="fas fa-fire"></i></button>
+                    <button data-theme="blue" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#2196f3] to-[#00bcd4] flex items-center justify-center text-white transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-secondary)] focus:ring-[var(--primary)]"><i class="fas fa-droplet"></i></button>
+                    <button data-theme="matrix" class="theme-btn w-10 h-10 rounded-full bg-gradient-to-br from-[#00ff41] to-[#008f11] flex items-center justify-center text-black transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-secondary)] focus:ring-[var(--primary)]"><i class="fas fa-terminal"></i></button>
+                </div>
+                <!-- Music controls -->
+                 <div id="music-controls-container" class="glass-card rounded-full p-2 flex flex-col gap-2 shadow-lg">
+                    <button id="music-toggle-btn" aria-label="Toggle Music" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-[var(--text-primary)] transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[var(--bg-secondary)] focus:ring-[var(--primary)]"><i id="music-icon" class="fas fa-play"></i></button>
+                    <label for="volume-slider" class="sr-only">Volume</label>
+                    <input type="range" id="volume-slider" class="w-10 h-2 bg-white/20 rounded-full appearance-none cursor-pointer [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-white/30 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[var(--primary)] [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-white/30 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-[var(--primary)]" min="0" max="1" step="0.05" value="0.25">
+                </div>
             </div>
 
-            <!-- Malware Signs Tab -->
-            <div id="malware-panel" class="tab-content hidden">
-                <div class="flex items-center gap-4 mb-8"><div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white"><i class="fas fa-bug text-xl"></i></div><h2 class="text-3xl font-bold">Identifying Malicious Software</h2></div>
-                <p class="mb-6">Be vigilant for these red flags after running any software:</p>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-exclamation-triangle"></i></div><h3 class="text-xl font-bold">System Behavior</h3></div><ul class="space-y-2"><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: var(--secondary);"></i> Random <code class="inline-code">CMD</code> windows flashing</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: var(--secondary);"></i> Browsers closing unexpectedly</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: var(--secondary);"></i> Sudden PC slowdowns/crashes</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: var(--secondary);"></i> Unusual network activity</li></ul></div>
-                    <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center text-yellow-500"><i class="fas fa-search"></i></div><h3 class="text-xl font-bold">Process Monitoring</h3></div><ul class="space-y-2"><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: #FFC107;"></i> Unknown processes in <code class="inline-code">Task Manager</code></li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: #FFC107;"></i> Suspicious startup programs</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: #FFC107;"></i> Antivirus disabled or alerting</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: #FFC107;"></i> High CPU/GPU usage when idle</li></ul></div>
+            <!-- Header Section -->
+            <header class="text-center mb-12">
+                 <div class="glass-card rounded-2xl p-8 mb-6 hover:shadow-lg hover:shadow-[var(--primary)]/20 transition-all duration-300">
+                     <h1 id="main-title" class="text-5xl md:text-6xl font-bold mb-4 gradient-text" data-text="Chara's Ultimate Roblox Exploit Guide"> Chara's Ultimate Roblox Exploit Guide </h1>
+                     <h2 class="text-lg font-medium text-[var(--text-secondary)]" data-text="Created by an r/robloxhackers Moderator • Updated April 2024 • AD-FREE"> Created by an r/robloxhackers Moderator • Updated April 2024 • AD-FREE </h2>
                  </div>
-                <div class="glass-card rounded-xl p-6 border-l-4 border-red-500 hover:scale-[1.01] transition-all duration-300"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-skull-crossbones"></i></div><h3 class="text-xl font-bold">Immediate Action Required</h3></div><p class="mb-4">If you notice any of these signs:</p><ol class="list-decimal pl-5 space-y-2"><li>Disconnect from the internet immediately</li><li>Run a full system scan with Windows Defender</li><li>Check startup programs using <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns" target="_blank" class="hover:underline">Autoruns</a></li><li>Consider resetting your PC if infection is confirmed</li></ol></div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                    <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><i class="fas fa-tools"></i></div><h3 class="text-xl font-bold">Diagnostic Tools</h3></div><ul class="space-y-3"><li><a href="https://learn.microsoft.com/en-us/sysinternals/downloads/process-explorer" target="_blank" class="hover:underline">Process Explorer</a> - Advanced task manager</li><li><a href="https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns" target="_blank" class="hover:underline">Autoruns</a> - Startup program manager</li><li><a href="https://www.wireshark.org/" target="_blank" class="hover:underline">Wireshark</a> - Network traffic analyzer</li></ul></div>
-                    <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-shield-alt"></i></div><h3 class="text-xl font-bold">Prevention</h3></div><ul class="space-y-3"><li>Use a standard user account (not admin) for daily activities</li><li>Keep your operating system and software updated</li><li>Use a reputable antivirus with real-time protection</li><li>Regularly backup important files</li></ul></div>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <!-- Info Cards... -->
+                     <div class="glass-card rounded-xl p-6 border-l-4 border-yellow-400 pulse-warning hover:scale-[1.02] transition-all duration-300">
+                        <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400"><i class="fas fa-user-shield"></i></div><h3 class="text-xl font-bold">Use Alt Accounts!</h3></div>
+                        <p><strong style="color: var(--text-warning-color);">ALWAYS test exploits and scripts on a secondary account first.</strong> Never risk your main account.</p>
+                    </div>
+                    <div class="glass-card rounded-xl p-6 border-l-4 border-red-500 hover:scale-[1.02] transition-all duration-300">
+                        <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-biohazard"></i></div><h3 class="text-xl font-bold">Untrusted Sources</h3></div>
+                        <p><strong style="color: var(--secondary);">NEVER download from untrusted sources.</strong> Always verify files first.</p>
+                    </div>
+                    <div class="glass-card rounded-xl p-6 border-l-4 border-blue-400 hover:scale-[1.02] transition-all duration-300">
+                        <div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-blue-400/20 flex items-center justify-center text-blue-400"><i class="fas fa-info-circle"></i></div><h3 class="text-xl font-bold">Creator's Note</h3></div>
+                        <p>Avoid using exploits in competitive games to maintain fair play.</p>
+                    </div>
+                 </div>
+            </header>
+
+            <!-- Navigation Tabs Container -->
+            <div class="glass-card rounded-xl p-1 mb-8 overflow-x-auto scrollbar-hide">
+                <div class="flex space-x-1" role="tablist" aria-label="Exploit Guide Sections">
+                     <!-- Tab Buttons ... -->
+                      <button role="tab" data-tab="verification" class="tab-btn"><i class="fas fa-shield-alt mr-2 opacity-75"></i> Verification</button>
+                      <button role="tab" data-tab="malware" class="tab-btn"><i class="fas fa-bug mr-2 opacity-75"></i> Malware Signs</button>
+                      <button role="tab" data-tab="security" class="tab-btn"><i class="fas fa-lock mr-2 opacity-75"></i> Security Tips</button>
+                      <button role="tab" data-tab="executors-free" class="tab-btn"><i class="fas fa-desktop mr-2 opacity-75"></i> Free Executors</button>
+                      <button role="tab" data-tab="executors-mobile" class="tab-btn"><i class="fas fa-mobile-alt mr-2 opacity-75"></i> Mobile</button>
+                      <button role="tab" data-tab="executors-paid" class="tab-btn"><i class="fas fa-dollar-sign mr-2 opacity-75"></i> Paid</button>
+                      <button role="tab" data-tab="scripts" class="tab-btn"><i class="fas fa-scroll mr-2 opacity-75"></i> Script Hubs</button>
+                      <button role="tab" data-tab="glossary" class="tab-btn"><i class="fas fa-book mr-2 opacity-75"></i> Glossary</button>
                  </div>
             </div>
 
-            <!-- Security Tips Tab -->
-            <div id="security-panel" class="tab-content hidden">
-                 <div class="flex items-center gap-4 mb-8"><div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white"><i class="fas fa-lock text-xl"></i></div><h2 class="text-3xl font-bold">Security Best Practices</h2></div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                     <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]">
-                        <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><i class="fas fa-brain"></i></div><h3 class="text-xl font-bold">Key Terms</h3></div>
-                        <dl class="space-y-3">
-                            <dt class="font-semibold" style="color: var(--secondary);">Beaming</dt>
-                            <dd class="ml-4 text-sm">Theft via malicious scripts/phishing.</dd>
-
-                            <dt class="font-semibold" style="color: var(--secondary);">RAT</dt>
-                            <dd class="ml-4 text-sm">Remote Access Trojan (malware giving control). <a href="https://vms.drweb.com/virus/?i=28312456" target="_blank" class="text-xs hover:underline opacity-75">[Example]</a></dd>
-
-                            <dt class="font-semibold" style="color: var(--secondary);">Cookie Logger</dt>
-                            <dd class="ml-4 text-sm">Steals session cookies (like <code class="inline-code">.ROBLOSECURITY</code>) to hijack accounts.</dd>
-
-                            <dt class="font-semibold" style="color: var(--secondary);">Keylogger</dt>
-                            <dd class="ml-4 text-sm">Records keystrokes to steal credentials.</dd>
-
-                            <!-- Added Terms -->
-                            <dt class="font-semibold" style="color: var(--secondary);">Obfuscation</dt>
-                            <dd class="ml-4 text-sm">Making code intentionally hard to read. Used legitimately, but often hides malware.</dd>
-
-                            <dt class="font-semibold" style="color: var(--secondary);">Deobfuscation</dt>
-                            <dd class="ml-4 text-sm">Attempting to reverse obfuscation to make code readable.</dd>
-
-                            <dt class="font-semibold" style="color: var(--secondary);">Webhook</dt>
-                            <dd class="ml-4 text-sm">A URL used by apps (like Discord) to receive data. Malicious scripts often use hidden webhooks to send stolen info.</dd>
-
-                            <dt class="font-semibold" style="color: var(--secondary);">Token Logger</dt>
-                            <dd class="ml-4 text-sm">Malware designed to steal Discord authentication tokens for account hijacking.</dd>
-                         </dl>
+            <!-- Main Content Area (Holds Tab Panels) -->
+            <main class="glass-card rounded-2xl p-6 md:p-8 flex-grow hover:shadow-lg hover:shadow-[var(--primary)]/10 transition-all duration-300">
+                 <!-- Verification Tab -->
+                 <div id="verification-panel" class="tab-content" role="tabpanel" aria-labelledby="verification-tab-button">
+                    <!-- Verification Content... -->
+                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"> <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white flex-shrink-0"><i class="fas fa-shield-alt text-xl"></i></div> <h2 class="text-3xl font-bold">Verifying Files: Quick Virus Check Guide</h2> </div>
+                     <p class="mb-6">Scan any downloaded files with these tools <strong>BEFORE</strong> executing them:</p>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-check"></i></div><h3 class="text-xl font-bold">Triage</h3></div> <p class="mb-4">Fast sandbox analysis with detailed behavior reports.</p> <a href="https://tria.ge" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white group"> Visit Site <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i> </a> </div>
+                        <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500"><i class="fas fa-shield-virus"></i></div><h3 class="text-xl font-bold">Any.run</h3></div> <p class="mb-4">Interactive behavior tracking with real-time analysis.</p> <a href="https://any.run" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white group"> Visit Site <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i> </a> </div>
                      </div>
-                     <div class="glass-card rounded-xl p-6 border-l-4 border-red-500 hover:bg-white/5 transition-all duration-300">
-                        <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-ban"></i></div><h3 class="text-xl font-bold">Common Scams</h3></div>
-                        <ol class="list-decimal pl-5 space-y-2">
-                            <li>Unverified Executors (TikTok, DMs, YouTube comments)</li>
-                            <li>HAR File Requests (<strong style="color: var(--primary);">NEVER</strong> share HAR files)</li>
-                            <li>Phishing Links (Fake login pages, fake trade sites)</li>
-                            <li>"Free Nitro"/Robux Generators (Always fake/malware)</li>
-                            <li>Fake Livestream Giveaways (Often use phishing links or require joining sketchy groups)</li>
-                            <li>Fake "Roblox Support" agents (Roblox staff rarely DM first and have official badges)</li>
-                            <li>Suspicious QR Code Scans (Especially for Discord login)</li>
-                            <li>Fake "Premium Payout" or "Group Fund" scams</li>
-                        </ol>
+                     <pre class="code-block language-lua relative"><code>-- Always combine scans with cautious judgment
+-- Never skip verification steps</code></pre>
+                     <div class="glass-card rounded-xl p-6 mt-8 border-l-4 border-[var(--secondary)]"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-[var(--secondary)]/20 flex items-center justify-center text-[var(--secondary)]"><i class="fas fa-lightbulb"></i></div><h3 class="text-xl font-bold">Pro Tips</h3></div> <ul class="list-disc pl-5 space-y-2"><li>Upload suspicious files to multiple scanners for cross-verification</li><li>Check file hashes (MD5, SHA-1, SHA-256) against known malware databases</li><li>Monitor network activity when running new software</li><li>Use virtual machines for testing potentially dangerous files</li></ul> </div>
+                 </div>
+                 <!-- Malware Signs Tab -->
+                 <div id="malware-panel" class="tab-content hidden" role="tabpanel" aria-labelledby="malware-tab-button">
+                    <!-- Malware Content... -->
+                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"> <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white flex-shrink-0"><i class="fas fa-bug text-xl"></i></div> <h2 class="text-3xl font-bold">Identifying Malicious Software</h2> </div>
+                    <p class="mb-6">Be vigilant for these red flags after running any software:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                       <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-exclamation-triangle"></i></div><h3 class="text-xl font-bold">System Behavior</h3></div> <ul class="space-y-2"><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: var(--secondary);"></i> Random <code class="inline-code">CMD</code> windows flashing</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: var(--secondary);"></i> Browsers closing unexpectedly</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: var(--secondary);"></i> Sudden PC slowdowns/crashes</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: var(--secondary);"></i> Unusual network activity</li></ul> </div>
+                       <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center text-yellow-500"><i class="fas fa-search"></i></div><h3 class="text-xl font-bold">Process Monitoring</h3></div> <ul class="space-y-2"><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: #FFC107;"></i> Unknown processes in <code class="inline-code">Task Manager</code></li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: #FFC107;"></i> Suspicious startup programs</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: #FFC107;"></i> Antivirus disabled or alerting</li><li class="flex items-start gap-2"><i class="fas fa-caret-right text-xs mt-1" style="color: #FFC107;"></i> High CPU/GPU usage when idle</li></ul> </div>
+                    </div>
+                    <div class="glass-card rounded-xl p-6 border-l-4 border-red-500 hover:scale-[1.01] transition-all duration-300"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-skull-crossbones"></i></div><h3 class="text-xl font-bold">Immediate Action Required</h3></div> <p class="mb-4">If you notice any of these signs:</p> <ol class="list-decimal pl-5 space-y-2"><li>Disconnect from the internet immediately</li><li>Run a full system scan with Windows Defender</li><li>Check startup programs using <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns" target="_blank" rel="noopener noreferrer" class="hover:underline">Autoruns</a></li><li>Consider resetting your PC if infection is confirmed</li></ol> </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                       <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><i class="fas fa-tools"></i></div><h3 class="text-xl font-bold">Diagnostic Tools</h3></div> <ul class="space-y-3"><li><a href="https://learn.microsoft.com/en-us/sysinternals/downloads/process-explorer" target="_blank" rel="noopener noreferrer" class="hover:underline">Process Explorer</a></li><li><a href="https://learn.microsoft.com/en-us/sysinternals/downloads/autoruns" target="_blank" rel="noopener noreferrer" class="hover:underline">Autoruns</a></li><li><a href="https://www.wireshark.org/" target="_blank" rel="noopener noreferrer" class="hover:underline">Wireshark</a></li></ul> </div>
+                       <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-shield-alt"></i></div><h3 class="text-xl font-bold">Prevention</h3></div> <ul class="space-y-3"><li>Use standard user account</li><li>Keep OS & software updated</li><li>Use reputable antivirus</li><li>Backup important files</li></ul> </div>
                     </div>
                  </div>
-                <div class="glass-card rounded-xl p-6 border-l-4 border-green-500 hover:bg-white/5 transition-all duration-300 mb-8">
-                    <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-shield-virus"></i></div><h3 class="text-xl font-bold">General Security Practices</h3></div>
-                    <ul class="list-disc pl-5 space-y-2">
-                        <li><strong style="color: var(--primary);">NEVER share your .ROBLOSECURITY cookie</strong> or account password.</li>
-                        <li>Use a strong, unique password for Roblox and enable 2FA (Authenticator App preferred over Email/SMS). Use a Password Manager.</li>
-                        <li>Enable Account PIN for settings changes on Roblox.</li>
-                        <li>Use virus scanners (<a href="#verification-panel" class="tab-link hover:underline">Verification Tools</a>) & sandboxes for downloaded files.</li>
-                        <li>Be extremely skeptical of unrealistic offers ("free lifetime exploit", "1M Robux giveaway").</li>
-                        <li>Regularly check authorized sessions/devices in Roblox settings and log out unknown ones.</li>
-                        <li>Monitor account activity logs for suspicious logins or changes.</li>
-                        <li><strong style="color: var(--primary);">NEVER run obfuscated scripts</strong> from untrusted sources. Learn basic deobfuscation or use trusted communities to verify.</li>
-                        <li>Be extremely wary of <code class="inline-code">.lua</code> files sent via DMs or found on random websites/pastebins.</li>
-                        <li>Check scripts for suspicious functions like <code class="inline-code">require(assetId)</code>, <code class="inline-code">loadstring</code>, <code class="inline-code">getfenv</code>, <code class="inline-code">setfenv</code>, <code class="inline-code">debug.*</code>, and especially URLs or mentions of <code class="inline-code">webhook</code>. These *can* be used legitimately but are often abused.</li>
-                        <li>Keep your Operating System (Windows, macOS) and browser updated.</li>
-                        <li>Be suspicious of anyone asking you to disable your antivirus or run commands in CMD/PowerShell.</li>
-                        <li>Do not download "Roblox Studio mods" or browser extensions claiming to enhance Roblox unless from highly verified developers.</li>
-                    </ul>
-                </div>
-                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8"> <!-- Changed to 3 cols for better fit -->
-                     <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500"><i class="fas fa-lock"></i></div><h3 class="text-xl font-bold">Account Protection</h3></div><ul class="space-y-3"><li>Enable 2-Step Verification (2SV)</li><li>Set up an Account PIN</li><li>Use a unique & secure email</li><li>Never reuse passwords</li><li>Check login history regularly</li><li>Verify email & phone number</li></ul></div>
-                     <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-500"><i class="fas fa-user-secret"></i></div><h3 class="text-xl font-bold">Privacy Tips</h3></div><ul class="space-y-3"><li>Don't share personal info</li><li>Use a VPN when possible</li><li>Be cautious with friend requests</li><li>Review privacy settings</li><li>Use alt accounts for testing</li><li>Limit who can join your game</li></ul></div>
-                      <!-- Discord Safety Card -->
-                     <div class="glass-card rounded-xl p-6 border-l-4 border-blue-400 hover:scale-[1.01] transition-all duration-300">
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="w-10 h-10 rounded-lg bg-blue-400/20 flex items-center justify-center text-blue-400">
-                                <i class="fab fa-discord"></i>
-                            </div>
-                            <h3 class="text-xl font-bold">Discord Safety</h3>
-                        </div>
-                        <ul class="list-disc pl-5 space-y-2">
-                            <li>Never share your Discord token.</li>
-                            <li>Be cautious joining new servers.</li>
-                            <li>Don't click suspicious links.</li>
-                            <li>Be wary of bot verification requests.</li>
-                            <li>Check OAuth permissions carefully.</li>
-                            <li>Disable DMs from unknown server members in Privacy Settings.</li>
-                             <li>Never scan QR codes for login unless initiated by you on official Discord site/app.</li>
-                        </ul>
-                    </div>
+                 <!-- Security Tips Tab -->
+                 <div id="security-panel" class="tab-content hidden" role="tabpanel" aria-labelledby="security-tab-button">
+                    <!-- Security Content... -->
+                      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"> <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white flex-shrink-0"><i class="fas fa-lock text-xl"></i></div> <h2 class="text-3xl font-bold">Security Best Practices</h2> </div>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                         <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><i class="fas fa-brain"></i></div><h3 class="text-xl font-bold">Key Terms</h3></div> <dl class="space-y-3"> <dt class="font-semibold" style="color: var(--secondary);">Beaming</dt><dd class="ml-4 text-sm">Theft via malicious scripts/phishing.</dd> <dt class="font-semibold" style="color: var(--secondary);">RAT</dt><dd class="ml-4 text-sm">Remote Access Trojan. <a href="https://vms.drweb.com/virus/?i=28312456" target="_blank" rel="noopener noreferrer" class="text-xs hover:underline opacity-75">[Example]</a></dd> <dt class="font-semibold" style="color: var(--secondary);">Cookie Logger</dt><dd class="ml-4 text-sm">Steals <code class="inline-code">.ROBLOSECURITY</code> cookie.</dd> <dt class="font-semibold" style="color: var(--secondary);">Keylogger</dt><dd class="ml-4 text-sm">Records keystrokes.</dd> <dt class="font-semibold" style="color: var(--secondary);">Obfuscation</dt><dd class="ml-4 text-sm">Making code hard to read (can hide malware).</dd> <dt class="font-semibold" style="color: var(--secondary);">Deobfuscation</dt><dd class="ml-4 text-sm">Reversing obfuscation.</dd> <dt class="font-semibold" style="color: var(--secondary);">Webhook</dt><dd class="ml-4 text-sm">URL used to send data (often stolen info).</dd> <dt class="font-semibold" style="color: var(--secondary);">Token Logger</dt><dd class="ml-4 text-sm">Steals Discord tokens.</dd> </dl> </div>
+                         <div class="glass-card rounded-xl p-6 border-l-4 border-red-500 hover:bg-white/5 transition-all duration-300"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-ban"></i></div><h3 class="text-xl font-bold">Common Scams</h3></div> <ol class="list-decimal pl-5 space-y-2"> <li>Unverified Executors (TikTok, DMs)</li> <li>HAR File Requests (<strong style="color: var(--primary);">NEVER SHARE</strong>)</li> <li>Phishing Links</li> <li>"Free Nitro"/Robux Generators</li> <li>Fake Livestream Giveaways</li> <li>Fake "Roblox Support"</li> <li>Suspicious QR Code Scans</li> <li>Fake "Premium Payout" scams</li> </ol> </div>
+                     </div>
+                     <div class="glass-card rounded-xl p-6 border-l-4 border-green-500 hover:bg-white/5 transition-all duration-300 mb-8"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-shield-virus"></i></div><h3 class="text-xl font-bold">General Security Practices</h3></div> <ul class="list-disc pl-5 space-y-2"> <li><strong style="color: var(--primary);">NEVER share <code class="inline-code">.ROBLOSECURITY</code> cookie</strong> or password.</li> <li>Use strong, unique passwords + 2FA (Authenticator App). Use Password Manager.</li> <li>Enable Account PIN on Roblox.</li> <li>Use <a href="#verification-panel" class="tab-link hover:underline">Verification Tools</a> & sandboxes.</li> <li>Be skeptical of unrealistic offers.</li> <li>Check authorized sessions regularly.</li> <li>Monitor account activity logs.</li> <li><strong style="color: var(--primary);">NEVER run obfuscated scripts</strong> from untrusted sources.</li> <li>Be wary of <code class="inline-code">.lua</code> files from DMs/random sites.</li> <li>Check scripts for <code class="inline-code">require()</code>, <code class="inline-code">loadstring</code>, <code class="inline-code">getfenv</code>, <code class="inline-code">webhook</code>, etc.</li> <li>Keep OS & browser updated.</li> <li>Don't disable antivirus or run random commands.</li> <li>Avoid untrusted Roblox "mods" or extensions.</li> </ul> </div>
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                         <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500"><i class="fas fa-lock"></i></div><h3 class="text-xl font-bold">Account Protection</h3></div><ul class="space-y-3"><li>Enable 2SV</li><li>Set Account PIN</li><li>Use unique email</li><li>Never reuse passwords</li><li>Check login history</li><li>Verify email/phone</li></ul></div>
+                         <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center text-orange-500"><i class="fas fa-user-secret"></i></div><h3 class="text-xl font-bold">Privacy Tips</h3></div><ul class="space-y-3"><li>Don't share personal info</li><li>Use a VPN</li><li>Be cautious with friend reqs</li><li>Review privacy settings</li><li>Use alt accounts</li><li>Limit game joining</li></ul></div>
+                         <div class="glass-card rounded-xl p-6 border-l-4 border-blue-400 hover:scale-[1.01] transition-all duration-300"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-blue-400/20 flex items-center justify-center text-blue-400"><i class="fab fa-discord"></i></div><h3 class="text-xl font-bold">Discord Safety</h3></div><ul class="list-disc pl-5 space-y-2"><li>Never share Discord token.</li><li>Be cautious joining servers.</li><li>Don't click suspicious links.</li><li>Wary of bot verification.</li><li>Check OAuth perms.</li><li>Disable DMs from strangers.</li><li>Never scan login QR codes.</li></ul></div>
+                     </div>
                  </div>
-            </div>
-
-            <!-- Free Executors Tab -->
-            <div id="executors-free-panel" class="tab-content hidden">
-                <div class="flex items-center gap-4 mb-8"><div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white"><i class="fas fa-desktop text-xl"></i></div><h2 class="text-3xl font-bold">Free Windows Executors</h2></div>
-                <div class="flex flex-wrap items-center gap-x-6 gap-y-2 mb-6 text-xs"><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500"></span><span>L8 = Level 8 Execution</span></div><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-yellow-500"></span><span>🔒 = Key System</span></div><div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500"></span><span>Caution Advised</span></div><div class="flex items-center gap-2"><span class="px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">AI</span><span>AI Aim Assist</span></div><div class="flex items-center gap-2"><span class="px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400">Ext</span><span>External Tool</span></div></div>
-
-                <!-- Reordered Table -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead><tr class="border-b border-white/10"><th class="pb-3 px-2 text-left font-semibold">Exploit</th><th class="pb-3 px-2 text-left font-semibold">Platform</th><th class="pb-3 px-2 text-left font-semibold">Key</th><th class="pb-3 px-2 text-left font-semibold">Perf.</th><th class="pb-3 px-2 text-left font-semibold">Notes</th><th class="pb-3 px-2 text-left font-semibold">Link</th></tr></thead>
-                        <tbody class="divide-y divide-white/5">
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">KRNL</td><td class="py-3 px-2">Windows</td><td class="py-3 px-2" style="color:#FFC107">🔒</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 100%</span></td><td class="py-3 px-2">Long-standing, reliable. Keysystem.</td><td class="py-3 px-2"><a href="https://krnl.cat" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Swift</td><td class="py-3 px-2">Windows</td><td class="py-3 px-2" style="color:#FFC107">🔒</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 100%</span></td><td class="py-3 px-2">Good perf. $15 life opt. Decompiler.</td><td class="py-3 px-2"><a href="https://getswift.gg" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Cryptic</td><td class="py-3 px-2">Windows</td><td class="py-3 px-2" style="color:#FFC107">🔒</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 98%</span></td><td class="py-3 px-2">Good perf. $5/mo opt.</td><td class="py-3 px-2"><a href="https://getcryptic.net" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Ronix</td><td class="py-3 px-2">Windows</td><td class="py-3 px-2" style="color:#FFC107">🔒</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 99%</span></td><td class="py-3 px-2">Newer. 2d keys.</td><td class="py-3 px-2"><a href="https://discord.gg/JPhSEGtMrr" target="_blank" class="hover:underline flex items-center gap-1">Discord <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Argon</td><td class="py-3 px-2">Windows</td><td class="py-3 px-2" style="color: var(--secondary);">❌</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 100%</span></td><td class="py-3 px-2" style="color: var(--secondary);">Keyless but past safety concerns. Unverified.</td><td class="py-3 px-2"><a href="https://discord.gg/zKnXsECbUG" target="_blank" class="hover:underline flex items-center gap-1">Discord <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Solara v3</td><td class="py-3 px-2">Windows</td><td class="py-3 px-2" style="color: var(--secondary);">❌</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">L3 | 51%</span></td><td class="py-3 px-2" style="color: var(--secondary);">Lower level. Unstable. Decompiler.</td><td class="py-3 px-2"><a href="https://getsolara.dev" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Xeno</td><td class="py-3 px-2">Windows</td><td class="py-3 px-2" style="color: var(--secondary);">❌</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">L3 | 41%</span></td><td class="py-3 px-2">Lower level. Basic. Decompiler.</td><td class="py-3 px-2"><a href="https://xeno.now" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Aimmy</td><td class="py-3 px-2">Windows</td><td class="py-3 px-2" style="color: var(--secondary);">❌</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-400">AI</span></td><td class="py-3 px-2" style="color:#66BB6A">AI Aim Assist (Different Tech). Safe. GTX1050+.</td><td class="py-3 px-2"><a href="https://aimmy.dev" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <!-- Disclaimer Added -->
-                <div class="glass-card rounded-xl p-4 mt-6 border-l-4 border-yellow-400">
-                    <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-lg"><i class="fas fa-exclamation-triangle"></i></div><h4 class="text-lg font-bold">Executor Ranking Disclaimer</h4></div>
-                    <p class="text-sm mt-2">The order above is subjective, based on general community reports around April 2024, and can change rapidly. Performance, safety, and key systems vary. <strong style="color: #FFC400;">ALWAYS do your own research (DYOR) and use verification tools before downloading or running any executor, especially on alt accounts first.</strong></p>
-                </div>
-            </div>
-
-            <!-- Mobile Executors Tab -->
-            <div id="executors-mobile-panel" class="tab-content hidden">
-                <div class="flex items-center gap-4 mb-8"><div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white"><i class="fas fa-mobile-alt text-xl"></i></div><h2 class="text-3xl font-bold">Mobile Executors</h2></div>
-
-                <!-- Reordered Table -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead><tr class="border-b border-white/10"><th class="pb-3 px-2 text-left font-semibold">Exploit</th><th class="pb-3 px-2 text-left font-semibold">Platform</th><th class="pb-3 px-2 text-left font-semibold">Key</th><th class="pb-3 px-2 text-left font-semibold">Perf.</th><th class="pb-3 px-2 text-left font-semibold">Notes</th><th class="pb-3 px-2 text-left font-semibold">Link</th></tr></thead>
-                        <tbody class="divide-y divide-white/5">
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Delta</td><td class="py-3 px-2">Android/iOS</td><td class="py-3 px-2" style="color:#FFC107">🔒</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 94%</span></td><td class="py-3 px-2">Generally good support & updates.</td><td class="py-3 px-2"><a href="https://deltaexploits.gg" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">ArceusX</td><td class="py-3 px-2">Android/iOS</td><td class="py-3 px-2" style="color:#FFC107">🔒</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | ~98%</span></td><td class="py-3 px-2" style="color: var(--secondary);">Long key. Safety history concerns.</td><td class="py-3 px-2"><a href="https://spdmteam.com/" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">VegaX</td><td class="py-3 px-2">Android/iOS</td><td class="py-3 px-2" style="color:#FFC107">🔒</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | ERR%</span></td><td class="py-3 px-2">2d keys. Often has issues.</td><td class="py-3 px-2"><a href="https://vegax.gg/" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">CodeX</td><td class="py-3 px-2">Android/iOS</td><td class="py-3 px-2" style="color:#FFC107">🔒</td><td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | ERR%</span></td><td class="py-3 px-2" style="color: var(--secondary);">Uses ArceusX tech. Often has issues.</td><td class="py-3 px-2"><a href="https://codex.lol" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                 <!-- Disclaimer Added -->
-                <div class="glass-card rounded-xl p-4 mt-6 border-l-4 border-yellow-400">
-                    <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-lg"><i class="fas fa-exclamation-triangle"></i></div><h4 class="text-lg font-bold">Executor Ranking Disclaimer</h4></div>
-                    <p class="text-sm mt-2">The order above is subjective, based on general community reports around April 2024, and can change rapidly. Performance, safety, and key systems vary. <strong style="color: #FFC400;">ALWAYS do your own research (DYOR) and use verification tools before downloading or running any executor, especially on alt accounts first.</strong></p>
-                </div>
-                <div class="glass-card rounded-xl p-6 mt-6 border-l-4 border-yellow-400 hover:scale-[1.01] transition-all duration-300"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400"><i class="fas fa-exclamation-triangle"></i></div><h3 class="text-xl font-bold">Mobile Exploiting Notes</h3></div><ul class="list-disc pl-5 space-y-2 mt-3"><li>Mobile executors often have more detection issues than PC</li><li>Performance varies greatly by device specifications</li><li>iOS options typically require jailbreak or sideloading</li><li>Always use an alt account when testing mobile exploits</li><li>Battery drain and overheating are common issues</li></ul></div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                     <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500"><i class="fas fa-robot"></i></div><h3 class="text-xl font-bold">Android Tips</h3></div><ul class="space-y-3"><li>Enable "Install unknown apps"</li><li>Use a file manager to verify APKs</li><li>Clear app cache regularly</li><li>Use split-screen for easier scripting</li></ul></div>
-                     <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><i class="fab fa-apple"></i></div><h3 class="text-xl font-bold">iOS Tips</h3></div><ul class="space-y-3"><li>Jailbreak provides best options</li><li>AltStore / Sideloadly for sideloading</li><li>Re-sign apps every 7 days (free dev acc)</li><li>Use TrollStore if device/iOS supported</li></ul></div>
+                 <!-- Free Executors Tab -->
+                 <div id="executors-free-panel" class="tab-content hidden" role="tabpanel" aria-labelledby="executors-free-tab-button">
+                    <!-- Free Executors Content... -->
+                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"> <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white flex-shrink-0"><i class="fas fa-desktop text-xl"></i></div> <h2 class="text-3xl font-bold">Free Windows Executors (UWP/MS Store Focus)</h2> </div>
+                     <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-xs text-[var(--text-secondary)]"> <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-green-500 shadow-sm"></span><span>L8</span></div> <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></span><span>L3-L7</span></div> <div class="flex items-center gap-1.5"><span class="font-bold text-lg" style="color:#FFC107">🔒</span><span>Key</span></div> <div class="flex items-center gap-1.5"><span class="font-bold text-lg" style="color:var(--secondary)">❌</span><span>Keyless</span></div> <div class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400">AI</span><span>AI Aim</span></div> <div class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-400">Ext</span><span>External</span></div> <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500 shadow-sm"></span><span>Caution</span></div> </div>
+                     <div class="overflow-x-auto glass-card rounded-lg p-1">
+                         <table class="w-full text-sm min-w-[600px]">
+                            <thead><tr class="border-b border-white/10"><th class="py-3 px-3 text-left font-semibold">Exploit</th><th class="py-3 px-3 text-left font-semibold">Key</th><th class="py-3 px-3 text-left font-semibold">Level</th><th class="py-3 px-3 text-left font-semibold">Comp.</th><th class="py-3 px-3 text-left font-semibold">Notes</th><th class="py-3 px-3 text-left font-semibold">Link</th></tr></thead>
+                             <tbody class="divide-y divide-white/5">
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">KRNL</td><td class="py-3 px-3 text-lg font-bold" style="color:#FFC107">🔒</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">100%</td><td class="py-3 px-3">Reliable, good compatibility.</td><td class="py-3 px-3"><a href="https://krnl.cat" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Swift</td><td class="py-3 px-3 text-lg font-bold" style="color:#FFC107">🔒</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">100%</td><td class="py-3 px-3">Good perf. $15 life opt. Decompiler.</td><td class="py-3 px-3"><a href="https://getswift.gg" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Cryptic</td><td class="py-3 px-3 text-lg font-bold" style="color:#FFC107">🔒</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">98%</td><td class="py-3 px-3">Good perf. $5/mo opt.</td><td class="py-3 px-3"><a href="https://getcryptic.net" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Ronix</td><td class="py-3 px-3 text-lg font-bold" style="color:#FFC107">🔒</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">99%</td><td class="py-3 px-3">Newer. 2d keys. Good reports.</td><td class="py-3 px-3"><a href="https://discord.gg/JPhSEGtMrr" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Discord <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium flex items-center gap-2">Argon<span class="w-3 h-3 rounded-full bg-red-500 shadow-sm flex-shrink-0" title="Caution Advised"></span></td><td class="py-3 px-3 text-lg font-bold" style="color:var(--secondary)">❌</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">100%</td><td class="py-3 px-3" style="color: var(--secondary);">Past safety concerns. Unverified.</td><td class="py-3 px-3"><a href="https://discord.gg/zKnXsECbUG" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Discord <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Solara v3</td><td class="py-3 px-3 text-lg font-bold" style="color:var(--secondary)">❌</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">L3</span></td><td class="py-3 px-3">51%</td><td class="py-3 px-3" style="color: var(--secondary);">Lower level. Unstable. Decompiler.</td><td class="py-3 px-3"><a href="https://getsolara.dev" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Xeno</td><td class="py-3 px-3 text-lg font-bold" style="color:var(--secondary)">❌</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">L3</span></td><td class="py-3 px-3">41%</td><td class="py-3 px-3">Lower level. Basic. Decompiler.</td><td class="py-3 px-3"><a href="https://xeno.now.sh/" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Aimmy</td><td class="py-3 px-3 text-lg font-bold" style="color:var(--secondary)">❌</td><td class="py-3 px-3"><span class="px-1.5 py-0.5 rounded-md bg-blue-500/20 text-blue-400 text-xs">AI</span></td><td class="py-3 px-3">N/A</td><td class="py-3 px-3" style="color:#66BB6A">AI Aim Assist. Safe. GTX1050+.</td><td class="py-3 px-3"><a href="https://aimmy.dev" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                             </tbody>
+                         </table>
+                     </div>
+                     <div class="glass-card rounded-xl p-4 mt-6 border-l-4 border-yellow-400"> <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-lg flex-shrink-0"><i class="fas fa-exclamation-triangle"></i></div><h4 class="text-lg font-bold">Executor Ranking & Safety Disclaimer</h4></div> <p class="text-sm mt-2">Order is subjective (Apr 2024). Performance/safety varies. <strong style="color: var(--text-warning-color);">ALWAYS DYOR, use verification tools, and test on alt accounts first.</strong> Assume unofficial downloads are malware.</p> </div>
                  </div>
-            </div>
-
-            <!-- Paid Executors Tab -->
-            <div id="executors-paid-panel" class="tab-content hidden">
-                <div class="flex items-center gap-4 mb-8"><div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white"><i class="fas fa-dollar-sign text-xl"></i></div><h2 class="text-3xl font-bold">Paid Windows Executors</h2></div>
-
-                <!-- Reordered Weekly Table -->
-                 <div class="mb-8">
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-clock" style="color: var(--secondary);"></i> Weekly Subscriptions</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead><tr class="border-b border-white/10"><th class="pb-3 px-2 text-left font-semibold">Exploit</th><th class="pb-3 px-2 text-left font-semibold">Price</th><th class="pb-3 px-2 text-left font-semibold">Perf.</th><th class="pb-3 px-2 text-left font-semibold">Notes</th><th class="pb-3 px-2 text-left font-semibold">Link</th></tr></thead>
-                            <tbody class="divide-y divide-white/5">
-                                <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Zenith</td> <td class="py-3 px-2">$6.5/w</td> <td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 100%</span></td> <td class="py-3 px-2">Stable. Decomp. Good rep.</td> <td class="py-3 px-2"><a href="https://zenith.win" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                                <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">AWP.gg</td> <td class="py-3 px-2">$7/w</td> <td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 100%</span></td> <td class="py-3 px-2">Emulator (UWP). Decomp.</td> <td class="py-3 px-2"><a href="https://discord.gg/awpgg" target="_blank" class="hover:underline flex items-center gap-1">Discord <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                                <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Wave</td> <td class="py-3 px-2">$7.5/w</td> <td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 87%</span></td> <td class="py-3 px-2">Decomp. Lower reported perf.</td> <td class="py-3 px-2"><a href="https://getwave.gg" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Reordered Monthly Table -->
-                 <div class="mb-8">
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-calendar" style="color: var(--primary);"></i> Monthly Subscriptions</h3>
-                    <div class="overflow-x-auto">
-                         <table class="w-full text-sm">
-                            <thead><tr class="border-b border-white/10"><th class="pb-3 px-2 text-left font-semibold">Exploit</th><th class="pb-3 px-2 text-left font-semibold">Price</th><th class="pb-3 px-2 text-left font-semibold">Perf.</th><th class="pb-3 px-2 text-left font-semibold">Notes</th><th class="pb-3 px-2 text-left font-semibold">Link</th></tr></thead>
-                            <tbody class="divide-y divide-white/5">
-                                <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Seliware</td> <td class="py-3 px-2">$10/m</td> <td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 100%</span></td> <td class="py-3 px-2">Discord support. Decomp.</td> <td class="py-3 px-2"><a href="https://seliware.com/" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                                <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Cryptic</td> <td class="py-3 px-2">$5/m</td> <td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 98%</span></td> <td class="py-3 px-2">Good perf. Also has free opt.</td> <td class="py-3 px-2"><a href="https://getcryptic.net" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Reordered Lifetime Table -->
-                 <div>
-                    <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-infinity" style="color:#4CAF50"></i> Lifetime Purchases</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead><tr class="border-b border-white/10"><th class="pb-3 px-2 text-left font-semibold">Exploit</th><th class="pb-3 px-2 text-left font-semibold">Price</th><th class="pb-3 px-2 text-left font-semibold">Perf.</th><th class="pb-3 px-2 text-left font-semibold">Notes</th><th class="pb-3 px-2 text-left font-semibold">Link</th></tr></thead>
-                            <tbody class="divide-y divide-white/5">
-                                <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Swift</td> <td class="py-3 px-2">$15 life</td> <td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8 | 100%</span></td> <td class="py-3 px-2">Good value. Decomp. Also has free opt.</td> <td class="py-3 px-2"><a href="https://getswift.gg" target="_blank" class="hover:underline flex items-center gap-1">Visit <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                                <tr class="hover:bg-white/5"><td class="py-3 px-2 font-medium">Matcha</td> <td class="py-3 px-2">$10 life</td> <td class="py-3 px-2"><span class="px-2 py-1 rounded-full text-xs bg-purple-500/20 text-purple-400">Ext (Driver)</span></td> <td class="py-3 px-2">External tool (different tech). Decomp+Explorer.</td> <td class="py-3 px-2"><a href="https://discord.gg/AURAHhSMxc" target="_blank" class="hover:underline flex items-center gap-1">Discord <i class="fas fa-external-link-alt text-xs"></i></a></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                 <!-- Disclaimer Added -->
-                <div class="glass-card rounded-xl p-4 mt-6 border-l-4 border-yellow-400">
-                    <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-lg"><i class="fas fa-exclamation-triangle"></i></div><h4 class="text-lg font-bold">Executor Ranking Disclaimer</h4></div>
-                    <p class="text-sm mt-2">The order above is subjective, based on general community reports around April 2024, and can change rapidly. Performance, safety, and features vary. <strong style="color: #FFC400;">ALWAYS do your own research (DYOR) and check recent reviews before purchasing or running any executor, especially on alt accounts first.</strong></p>
-                </div>
-                <div class="glass-card rounded-xl p-6 mt-6 border-l-4 border-[var(--secondary)] hover:scale-[1.01] transition-all duration-300"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-lg bg-[var(--secondary)]/20 flex items-center justify-center text-[var(--secondary)]"><i class="fas fa-lightbulb"></i></div><h3 class="text-xl font-bold">Paid Exploit Considerations</h3></div><ul class="list-disc pl-5 space-y-2 mt-3"><li>Check Discord communities for user reviews before purchasing</li><li>Lifetime purchases may seem expensive upfront but save money long-term</li><li>Some paid exploits offer free trials - take advantage to test performance</li><li>Be wary of exploits that don't offer refunds or have poor support</li><li>Consider the developer's reputation and update frequency</li></ul></div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                     <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-money-bill-wave"></i></div><h3 class="text-xl font-bold">Payment Methods</h3></div><ul class="space-y-3"><li>Cryptocurrency (most private)</li><li>PayPal (buyer protection)</li><li>Gift cards (anonymous option)</li><li>Credit cards (least recommended)</li></ul></div>
-                     <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)]"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><i class="fas fa-shield-alt"></i></div><h3 class="text-xl font-bold">Security</h3></div><ul class="space-y-3"><li>Use unique credentials</li><li>Enable 2FA if available</li><li>Check for HTTPS on payment pages</li><li>Never share license keys</li></ul></div>
+                  <!-- Mobile Executors Tab -->
+                 <div id="executors-mobile-panel" class="tab-content hidden" role="tabpanel" aria-labelledby="executors-mobile-tab-button">
+                    <!-- Mobile Executors Content... -->
+                      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"> <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white flex-shrink-0"><i class="fas fa-mobile-alt text-xl"></i></div> <h2 class="text-3xl font-bold">Mobile Executors (Android / iOS)</h2> </div>
+                     <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-xs text-[var(--text-secondary)]"> <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-green-500 shadow-sm"></span><span>L8</span></div> <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-yellow-500 shadow-sm"></span><span>Lower</span></div> <div class="flex items-center gap-1.5"><span class="font-bold text-lg" style="color:#FFC107">🔒</span><span>Key</span></div> <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500 shadow-sm"></span><span>Caution</span></div> </div>
+                     <div class="overflow-x-auto glass-card rounded-lg p-1">
+                         <table class="w-full text-sm min-w-[600px]">
+                             <thead><tr class="border-b border-white/10"><th class="py-3 px-3 text-left font-semibold">Exploit</th><th class="py-3 px-3 text-left font-semibold">Platform</th><th class="py-3 px-3 text-left font-semibold">Key</th><th class="py-3 px-3 text-left font-semibold">Level</th><th class="py-3 px-3 text-left font-semibold">Comp.</th><th class="py-3 px-3 text-left font-semibold">Notes</th><th class="py-3 px-3 text-left font-semibold">Link</th></tr></thead>
+                             <tbody class="divide-y divide-white/5">
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Delta</td><td class="py-3 px-3">Android/iOS</td><td class="py-3 px-3 text-lg font-bold" style="color:#FFC107">🔒</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">~94%</td><td class="py-3 px-3">Good support. iOS via TestFlight/Sideload.</td><td class="py-3 px-3"><a href="https://deltaexploits.gg" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium flex items-center gap-2">ArceusX<span class="w-3 h-3 rounded-full bg-red-500 shadow-sm flex-shrink-0" title="Caution Advised"></span></td><td class="py-3 px-3">Android</td><td class="py-3 px-3 text-lg font-bold" style="color:#FFC107">🔒</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">~98%</td><td class="py-3 px-3" style="color: var(--secondary);">Long key. Safety history.</td><td class="py-3 px-3"><a href="https://spdmteam.com/" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">VegaX</td><td class="py-3 px-3">Android</td><td class="py-3 px-3 text-lg font-bold" style="color:#FFC107">🔒</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">L?</span></td><td class="py-3 px-3">ERR%</td><td class="py-3 px-3">2d keys. Often has issues.</td><td class="py-3 px-3"><a href="https://vegax.gg/" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                                 <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">CodeX</td><td class="py-3 px-3">Android</td><td class="py-3 px-3 text-lg font-bold" style="color:#FFC107">🔒</td><td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-400">L?</span></td><td class="py-3 px-3">ERR%</td><td class="py-3 px-3" style="color: var(--secondary);">Uses ArceusX tech? Issues common.</td><td class="py-3 px-3"><a href="https://codex.lol" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr>
+                               </tbody>
+                         </table>
+                     </div>
+                     <div class="glass-card rounded-xl p-4 mt-6 border-l-4 border-yellow-400"> <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-lg flex-shrink-0"><i class="fas fa-exclamation-triangle"></i></div><h4 class="text-lg font-bold">Executor Ranking & Safety Disclaimer</h4></div> <p class="text-sm mt-2">Order is subjective (Apr 2024). Performance/safety varies. <strong style="color: var(--text-warning-color);">ALWAYS DYOR, use verification tools, and test on alt accounts first.</strong> Assume unofficial downloads are malware.</p> </div>
+                     <div class="glass-card rounded-xl p-6 mt-6 border-l-4 border-yellow-400 hover:scale-[1.01] transition-all duration-300"> <div class="flex items-center gap-4"><div class="w-10 h-10 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400 flex-shrink-0"><i class="fas fa-mobile-alt"></i></div><h3 class="text-xl font-bold">Mobile Exploiting Notes</h3></div> <ul class="list-disc pl-5 space-y-2 mt-3"><li>More detection issues than PC (UWP).</li><li>Performance varies by device.</li><li>iOS requires jailbreak/sideload (AltStore, Sideloadly, TrollStore).</li><li>Always use alt accounts for testing.</li><li>Battery drain/overheating possible.</li></ul> </div>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                         <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-500"><i class="fab fa-android"></i></div><h3 class="text-xl font-bold">Android Tips</h3></div><ul class="space-y-3"><li>Enable "Install unknown apps".</li><li>Verify APK safety.</li><li>Clear cache if issues.</li><li>Use split-screen?</li></ul></div>
+                         <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><i class="fab fa-apple"></i></div><h3 class="text-xl font-bold">iOS Tips</h3></div><ul class="space-y-3"><li>Jailbreak = best option (risky).</li><li>AltStore/Sideloadly (re-sign 7d).</li><li>TrollStore (permanent signing).</li><li>TestFlight betas (limited).</li></ul></div>
+                     </div>
                  </div>
-            </div>
-
-            <!-- Script Hubs Tab -->
-            <div id="scripts-panel" class="tab-content hidden">
-                <div class="flex items-center gap-4 mb-8"><div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white"><i class="fas fa-scroll text-xl"></i></div><h2 class="text-3xl font-bold">Recommended Script Hubs</h2></div>
-                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div class="glass-card rounded-xl p-6 border-l-4 border-green-500 hover:bg-white/5 transition-all duration-300"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-check-circle"></i></div><h3 class="text-xl font-bold">Trusted Hubs</h3></div><p class="mb-4">Use caution. Verify sources before running any scripts.</p><ul class="space-y-3"><li><a href="https://discord.gg/3M7m8C2xKE" target="_blank" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white"><i class="fab fa-discord"></i> KFC Bucket<i class="fas fa-external-link-alt text-xs ml-auto"></i></a></li><li><a href="https://discord.gg/Tz35rZHRQJ" target="_blank" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white"><i class="fab fa-discord"></i> Melon Hub<i class="fas fa-external-link-alt text-xs ml-auto"></i></a></li><li><a href="https://discord.gg/expensivehub" target="_blank" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white"><i class="fab fa-discord"></i> Expensive<i class="fas fa-external-link-alt text-xs ml-auto"></i></a></li></ul></div>
-                     <div class="glass-card rounded-xl p-6 border-l-4 border-red-500 hover:bg-white/5 transition-all duration-300"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-times-circle"></i></div><h3 class="text-xl font-bold">Hubs to Avoid</h3></div><p class="mb-4">History of concerns. Research heavily if considering.</p><ul class="space-y-3"><li class="flex items-center gap-3 px-4 py-2 rounded-lg bg-red-500/10"><i class="fas fa-skull-crossbones" style="color: var(--secondary);"></i><span class="font-medium">VenoxHub</span><span class="text-xs ml-auto" style="color: color-mix(in srgb, var(--secondary) 70%, transparent);">Malware reports</span></li><li class="flex items-center gap-3 px-4 py-2 rounded-lg bg-red-500/10"><i class="fas fa-skull-crossbones" style="color: var(--secondary);"></i><span class="font-medium">HoHoHub</span><span class="text-xs ml-auto" style="color: color-mix(in srgb, var(--secondary) 70%, transparent);">Cookie Logging</span></li><li class="flex items-center gap-3 px-4 py-2 rounded-lg bg-red-500/10"><i class="fas fa-skull-crossbones" style="color: var(--secondary);"></i><span class="font-medium">Solaris</span><span class="text-xs ml-auto" style="color: color-mix(in srgb, var(--secondary) 70%, transparent);">RAT History</span></li></ul></div>
+                 <!-- Paid Executors Tab -->
+                 <div id="executors-paid-panel" class="tab-content hidden" role="tabpanel" aria-labelledby="executors-paid-tab-button">
+                    <!-- Paid Executors Content... -->
+                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"> <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white flex-shrink-0"><i class="fas fa-dollar-sign text-xl"></i></div> <h2 class="text-3xl font-bold">Paid Windows Executors (UWP/MS Store Focus)</h2> </div>
+                     <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mb-6 text-xs text-[var(--text-secondary)]"> <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-green-500 shadow-sm"></span><span>L8</span></div> <div class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-400">Ext</span><span>External</span></div> <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500 shadow-sm"></span><span>Caution</span></div> </div>
+                     <div class="mb-8"> <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-clock" style="color: var(--secondary);"></i> Weekly Subscriptions</h3> <div class="overflow-x-auto glass-card rounded-lg p-1"> <table class="w-full text-sm min-w-[600px]"> <thead><tr class="border-b border-white/10"><th class="py-3 px-3 text-left font-semibold">Exploit</th><th class="py-3 px-3 text-left font-semibold">Price</th><th class="py-3 px-3 text-left font-semibold">Level</th><th class="py-3 px-3 text-left font-semibold">Comp.</th><th class="py-3 px-3 text-left font-semibold">Notes</th><th class="py-3 px-3 text-left font-semibold">Link</th></tr></thead> <tbody class="divide-y divide-white/5"> <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Zenith</td> <td class="py-3 px-3">$6.5/w</td> <td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">100%</td> <td class="py-3 px-3">Stable. Decomp. Good rep.</td> <td class="py-3 px-3"><a href="https://zenith.win" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr> <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">AWP.gg</td> <td class="py-3 px-3">$7/w</td> <td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">100%</td> <td class="py-3 px-3">Emulator (UWP). Decomp.</td> <td class="py-3 px-3"><a href="https://discord.gg/awpgg" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Discord <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr> <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Wave</td> <td class="py-3 px-3">$7.5/w</td> <td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">87%</td> <td class="py-3 px-3">Decomp. Lower reported perf.</td> <td class="py-3 px-3"><a href="https://getwave.gg" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr> </tbody> </table> </div> </div>
+                     <div class="mb-8"> <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-calendar" style="color: var(--primary);"></i> Monthly Subscriptions</h3> <div class="overflow-x-auto glass-card rounded-lg p-1"> <table class="w-full text-sm min-w-[600px]"> <thead><tr class="border-b border-white/10"><th class="py-3 px-3 text-left font-semibold">Exploit</th><th class="py-3 px-3 text-left font-semibold">Price</th><th class="py-3 px-3 text-left font-semibold">Level</th><th class="py-3 px-3 text-left font-semibold">Comp.</th><th class="py-3 px-3 text-left font-semibold">Notes</th><th class="py-3 px-3 text-left font-semibold">Link</th></tr></thead> <tbody class="divide-y divide-white/5"> <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Seliware</td> <td class="py-3 px-3">$10/m</td> <td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">100%</td> <td class="py-3 px-3">Discord support. Decomp.</td> <td class="py-3 px-3"><a href="https://seliware.com/" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr> <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Cryptic</td> <td class="py-3 px-3">$5/m</td> <td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">98%</td> <td class="py-3 px-3">Good perf. Also has free opt.</td> <td class="py-3 px-3"><a href="https://getcryptic.net" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr> </tbody> </table> </div> </div>
+                     <div> <h3 class="text-xl font-bold mb-4 flex items-center gap-2"><i class="fas fa-infinity" style="color:#4CAF50"></i> Lifetime Purchases</h3> <div class="overflow-x-auto glass-card rounded-lg p-1"> <table class="w-full text-sm min-w-[600px]"> <thead><tr class="border-b border-white/10"><th class="py-3 px-3 text-left font-semibold">Exploit</th><th class="py-3 px-3 text-left font-semibold">Price</th><th class="py-3 px-3 text-left font-semibold">Type</th><th class="py-3 px-3 text-left font-semibold">Comp.</th><th class="py-3 px-3 text-left font-semibold">Notes</th><th class="py-3 px-3 text-left font-semibold">Link</th></tr></thead> <tbody class="divide-y divide-white/5"> <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Swift</td> <td class="py-3 px-3">$15</td> <td class="py-3 px-3"><span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">L8</span></td><td class="py-3 px-3">100%</td> <td class="py-3 px-3">Good value. Decomp. Free opt too.</td> <td class="py-3 px-3"><a href="https://getswift.gg" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Visit <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr> <tr class="hover:bg-white/5 transition-colors"><td class="py-3 px-3 font-medium">Matcha</td> <td class="py-3 px-3">$10</td> <td class="py-3 px-3"><span class="px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-400 text-xs">Ext</span></td><td class="py-3 px-3">N/A</td> <td class="py-3 px-3">External tool (Driver). Decomp+Exp.</td> <td class="py-3 px-3"><a href="https://discord.gg/AURAHhSMxc" target="_blank" rel="noopener noreferrer" class="hover:underline flex items-center gap-1 group">Discord <i class="fas fa-external-link-alt text-xs group-hover:translate-x-1 transition-transform"></i></a></td></tr> </tbody> </table> </div> </div>
+                     <div class="glass-card rounded-xl p-4 mt-6 border-l-4 border-yellow-400"> <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400 text-lg flex-shrink-0"><i class="fas fa-exclamation-triangle"></i></div><h4 class="text-lg font-bold">Executor Ranking & Safety Disclaimer</h4></div> <p class="text-sm mt-2">Order is subjective (Apr 2024). Performance/safety varies. <strong style="color: var(--text-warning-color);">ALWAYS DYOR, check recent reviews, and test on alt accounts first.</strong> Paid ≠ safer/better.</p> </div>
+                     <div class="glass-card rounded-xl p-6 mt-6 border-l-4 border-[var(--secondary)] hover:scale-[1.01] transition-all duration-300"> <div class="flex items-center gap-4"><div class="w-10 h-10 rounded-lg bg-[var(--secondary)]/20 flex items-center justify-center text-[var(--secondary)] flex-shrink-0"><i class="fas fa-lightbulb"></i></div><h3 class="text-xl font-bold">Paid Exploit Considerations</h3></div> <ul class="list-disc pl-5 space-y-2 mt-3"><li>Check Discord communities for reviews/support.</li><li>Lifetime relies on developer longevity.</li><li>Utilize free trials if available.</li><li>Wary of no refunds/poor support.</li><li>Consider developer reputation/updates.</li></ul> </div>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                         <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-money-bill-wave"></i></div><h3 class="text-xl font-bold">Payment Methods</h3></div><ul class="space-y-3"><li>Crypto (Most private)</li><li>PayPal (Buyer protection)</li><li>Gift cards (Anonymous)</li><li>Credit/Debit (Least private)</li></ul></div>
+                         <div class="glass-card rounded-xl p-6 hover:bg-white/5 transition-all duration-300 hover:border-[var(--primary)] border border-transparent"><div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-500"><i class="fas fa-shield-alt"></i></div><h3 class="text-xl font-bold">Security</h3></div><ul class="space-y-3"><li>Use unique credentials</li><li>Enable 2FA if available</li><li>Check HTTPS on payment</li><li>Never share license keys</li></ul></div>
+                     </div>
                  </div>
-                <div class="glass-card rounded-xl p-6 mt-6 border-l-4 border-yellow-400 hover:scale-[1.01] transition-all duration-300"><div class="flex items-center gap-4"><div class="w-10 h-10 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400"><i class="fas fa-exclamation-triangle"></i></div><h3 class="text-xl font-bold">Script Safety</h3></div><ul class="list-disc pl-5 space-y-2 mt-3"><li><strong>Never run obfuscated scripts</strong> unless you trust the source implicitly or deobfuscate them first.</li><li>Look for suspicious functions like <code class="inline-code">getfenv</code>, <code class="inline-code">require</code>, <code class="inline-code">loadstring</code>, <code class="inline-code">http</code>, <code class="inline-code">webhook</code>.</li><li>Test scripts on an alt account first.</li><li>Prefer scripts from reputable communities or developers.</li><li>Be wary of scripts demanding Discord verification or external logins.</li></ul></div>
-            </div>
+                  <!-- Script Hubs Tab -->
+                 <div id="scripts-panel" class="tab-content hidden" role="tabpanel" aria-labelledby="scripts-tab-button">
+                    <!-- Script Hubs Content... -->
+                      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"> <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white flex-shrink-0"><i class="fas fa-scroll text-xl"></i></div> <h2 class="text-3xl font-bold">Recommended Script Hubs</h2> </div>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                         <div class="glass-card rounded-xl p-6 border-l-4 border-green-500 hover:bg-white/5 transition-all duration-300"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center text-green-500"><i class="fas fa-check-circle"></i></div><h3 class="text-xl font-bold">Trusted Hubs</h3></div> <p class="mb-4"><strong style="color: var(--text-warning-color);">Use caution.</strong> Verify sources before running scripts.</p> <ul class="space-y-3"><li><a href="https://discord.gg/3M7m8C2xKE" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white group"><i class="fab fa-discord"></i> KFC Bucket<i class="fas fa-external-link-alt text-xs ml-auto group-hover:translate-x-1 transition-transform"></i></a></li><li><a href="https://discord.gg/Tz35rZHRQJ" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white group"><i class="fab fa-discord"></i> Melon Hub<i class="fas fa-external-link-alt text-xs ml-auto group-hover:translate-x-1 transition-transform"></i></a></li><li><a href="https://discord.gg/expensivehub" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white group"><i class="fab fa-discord"></i> Expensive<i class="fas fa-external-link-alt text-xs ml-auto group-hover:translate-x-1 transition-transform"></i></a></li></ul> </div>
+                         <div class="glass-card rounded-xl p-6 border-l-4 border-red-500 hover:bg-white/5 transition-all duration-300"> <div class="flex items-center gap-4 mb-4"><div class="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center text-red-500"><i class="fas fa-times-circle"></i></div><h3 class="text-xl font-bold">Hubs to Avoid</h3></div> <p class="mb-4">History of concerns. Research heavily.</p> <ul class="space-y-3"><li class="flex items-center gap-3 px-4 py-2 rounded-lg bg-red-500/10"><i class="fas fa-skull-crossbones" style="color: var(--secondary);"></i><span class="font-medium">VenoxHub</span><span class="text-xs ml-auto text-[var(--text-secondary)] opacity-80">Malware reports</span></li><li class="flex items-center gap-3 px-4 py-2 rounded-lg bg-red-500/10"><i class="fas fa-skull-crossbones" style="color: var(--secondary);"></i><span class="font-medium">HoHoHub</span><span class="text-xs ml-auto text-[var(--text-secondary)] opacity-80">Cookie Logging</span></li><li class="flex items-center gap-3 px-4 py-2 rounded-lg bg-red-500/10"><i class="fas fa-skull-crossbones" style="color: var(--secondary);"></i><span class="font-medium">Solaris</span><span class="text-xs ml-auto text-[var(--text-secondary)] opacity-80">RAT History</span></li></ul> </div>
+                     </div>
+                     <div class="glass-card rounded-xl p-6 mt-6 border-l-4 border-yellow-400 hover:scale-[1.01] transition-all duration-300"> <div class="flex items-center gap-4"><div class="w-10 h-10 rounded-lg bg-yellow-400/20 flex items-center justify-center text-yellow-400 flex-shrink-0"><i class="fas fa-exclamation-triangle"></i></div><h3 class="text-xl font-bold">Script Safety Checklist</h3></div> <ul class="list-disc pl-5 space-y-2 mt-3"><li><strong>Never run obfuscated scripts</strong> unless trusted/verified.</li><li>Look for <code class="inline-code">getfenv</code>, <code class="inline-code">require</code>, <code class="inline-code">loadstring</code>, <code class="inline-code">http</code>, <code class="inline-code">webhook</code>.</li><li>Test on alt account first.</li><li>Prefer reputable sources.</li><li>Wary of Discord verify/external logins.</li><li>Avoid random Pastebin/DM scripts.</li></ul> </div>
+                 </div>
+                  <!-- Glossary Panel -->
+                 <div id="glossary-panel" class="tab-content hidden" role="tabpanel" aria-labelledby="glossary-tab-button">
+                    <!-- Glossary Content... -->
+                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-8"> <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white flex-shrink-0"> <i class="fas fa-book text-xl"></i> </div> <h2 class="text-3xl font-bold">Glossary of Terms</h2> </div>
+                     <dl class="space-y-4"> <div><dt>Executor</dt><dd>Software to inject/run Lua scripts.</dd></div> <div><dt>Script</dt><dd>Lua code to modify game behavior.</dd></div> <div><dt>Level (L1-L8)</dt><dd>Executor capability (L8 bypasses more).</dd></div> <div><dt>Key System</dt><dd>Ad-link system for free executor access.</dd></div> <div><dt>Decompiler</dt><dd>Tool to reverse bytecode to readable Lua.</dd></div> <div><dt>Obfuscation</dt><dd>Making code hard to read (hides malware).</dd></div> <div><dt>FE (Filtering Enabled)</dt><dd>Roblox security model limiting client changes.</dd></div> <div><dt>Server-Side Executor</dt><dd>Rare exploit on compromised server.</dd></div> <div><dt>RAT</dt><dd>Malware giving remote computer control.</dd></div> <div><dt>Cookie Logger</dt><dd>Steals <code class="inline-code">.ROBLOSECURITY</code> cookie for account access.</dd></div> <div><dt>Byfron/Hyperion</dt><dd>Roblox anti-cheat system.</dd></div> <div><dt>Sandbox</dt><dd>Isolated environment for safe file analysis.</dd></div> <div><dt>VM</dt><dd>Virtual Machine for isolated testing.</dd></div> <div><dt>Script Hub</dt><dd>Collection of scripts for various games/tasks.</dd></div> <div><dt>Webhook</dt><dd>URL (e.g., Discord) used to send data (often stolen).</dd></div> <div><dt>Token Logger</dt><dd>Malware stealing Discord tokens.</dd></div> <div><dt>HAR File</dt><dd>Browser network log containing sensitive data (<strong style="color: var(--primary);">NEVER SHARE</strong>).</dd></div> </dl>
+                 </div>
 
-             <!-- Glossary Panel -->
-             <div id="glossary-panel" class="tab-content hidden">
-                 <div class="flex items-center gap-4 mb-8">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] flex items-center justify-center text-white">
-                        <i class="fas fa-book text-xl"></i>
-                    </div>
-                    <h2 class="text-3xl font-bold">Glossary of Terms</h2>
-                </div>
-                 <dl><dt>Executor</dt><dd>Software used to inject and run Lua scripts into the Roblox client process.</dd><dt>Script</dt><dd>Code written in Lua that interacts with the Roblox game environment to perform actions not normally possible.</dd><dt>Level (L1-L8)</dt><dd>Refers to the execution capabilities of an executor. Higher levels (L7/L8) generally bypass more checks and can run more complex scripts (like <code>getupvalues</code>, <code>getgenv</code>). L8 is currently the highest standard.</dd><dt>Key System</dt><dd>A method used by free executors to generate revenue, typically requiring users to visit link shorteners (like Linkvertise) to obtain a temporary key allowing executor usage.</dd><dt>Decompiler</dt><dd>A tool, often built into executors, that attempts to reverse-engineer Roblox's bytecode back into somewhat readable Lua script, useful for understanding game internals or scripts.</dd><dt>Obfuscation</dt><dd>The process of making code difficult for humans to read or understand, often used to hide malicious functionality (like loggers) or protect script intellectual property.</dd><dt>FE (Filtering Enabled)</dt><dd>Roblox's security model where changes made by a client's script are generally not replicated to the server or other players unless explicitly allowed by the game's code. This limits cheats like flying or god mode in many games.</dd><dt>Server-Side Executor</dt><dd>An exploit run on a compromised server (often via backdoors placed by developers), allowing scripts to affect all players. Extremely rare and usually private/paid.</dd><dt>RAT (Remote Access Trojan)</dt><dd>Malware disguised as legitimate software (like an executor) that gives an attacker remote control over the victim's computer.</dd><dt>Cookie Logger / .ROBLOSECURITY</dt><dd>Malware or phishing technique aimed at stealing the <code>.ROBLOSECURITY</code> authentication cookie from a user's browser, allowing the attacker to log into the victim's Roblox account without a password.</dd><dt>Byfron / Hyperion</dt><dd>Names associated with Roblox's current anti-cheat system, aimed at detecting and preventing script injection and memory modification. It's why exploits break frequently after Roblox updates.</dd><dt>Sandbox</dt><dd>An isolated environment (like Triage or Any.run) used to safely run and analyze potentially malicious files without affecting the host system.</dd><dt>VM (Virtual Machine)</dt><dd>Software that emulates a complete computer system, allowing you to run an operating system within your main OS. Useful for testing potentially harmful software in isolation.</dd><dt>Script Hub</dt><dd>A collection of scripts, often presented within an executor's UI or as a standalone script, providing cheats for multiple games or various functionalities.</dd></dl>
-            </div>
+            </main> <!-- End Main Content Area -->
 
-        </main>
-    </div> <!-- End Container -->
+        </div> <!-- End Container -->
+
+    </div> <!-- End #site-content wrapper -->
+
 
     <!-- Prism.js Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js" defer></script>
+    <!-- Explicitly load Lua if needed: -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-lua.min.js" defer></script> -->
+
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- Element References ---
-            const themeButtons = document.querySelectorAll('.theme-btn');
-            const body = document.body;
-            const allThemeClasses = ['theme-dark', 'theme-purple', 'theme-red', 'theme-blue', 'theme-matrix'];
-            const musicControlsContainer = document.getElementById('music-controls-container');
-            const musicToggleBtn = document.getElementById('music-toggle-btn');
-            const musicIcon = document.getElementById('music-icon');
-            const backgroundMusic = document.getElementById('background-music');
-            const volumeSlider = document.getElementById('volume-slider');
+        // --- Site Initialization ---
+        function initializeSite() {
+            console.log("Initializing site...");
+            const siteContent = document.getElementById('site-content');
+            const particlesContainer = document.getElementById('particles');
 
-            // --- Music Helper Functions ---
-            function attemptAutoplayMusic() {
-                if (backgroundMusic && backgroundMusic.paused) {
-                    console.log("Attempting autoplay for red theme...");
-                    backgroundMusic.play().catch(e => {
-                        console.warn("Autoplay failed (Browser restriction likely):", e.name);
-                        if (musicIcon) musicIcon.className = 'fas fa-play';
-                    });
-                }
+            if(siteContent) {
+                siteContent.style.opacity = '1'; // Fade in main content
             }
-            function pauseMusic() {
-                 if (backgroundMusic && !backgroundMusic.paused) {
-                    backgroundMusic.pause();
+
+            createParticles(particlesContainer, 'float-particle-main', 50); // Initialize main site particles
+            initializeTabs();
+            initializeThemeSwitcher();
+            initializeMusicPlayer();
+            initializeCopyButtons(); // Initialize copy buttons after content is visible
+            highlightInitialCode(); // Highlight code after content is visible
+            // Add any other initializations needed for the main site here
+        }
+
+         // --- Particle Function ---
+         function createParticles(container, animationName, count) {
+             if (!container) {
+                  console.warn("Particle container not found for:", animationName);
+                  return;
+             }
+             container.innerHTML = ''; // Clear existing particles
+             const themePrimary = getThemeColor('--primary', '#ff005c'); // Use helper
+             const themeSecondary = getThemeColor('--secondary', '#00b8ff');
+             const themeAccent = getThemeColor('--accent', '#00ff9d');
+             const colors = [themePrimary, themeSecondary, themeAccent, 'rgba(255,255,255,0.5)'];
+
+             for (let i = 0; i < count; i++) {
+                 const particle = document.createElement('div');
+                 particle.className = animationName === 'float-particle-loading' ? 'loading-particle' : 'particle';
+                 const size = Math.random() * (animationName === 'float-particle-loading' ? 1.5 : 2.5) + 1;
+                 particle.style.width = `${size}px`; particle.style.height = `${size}px`;
+                 particle.style.left = `${Math.random() * 100}%`;
+                 particle.style.bottom = `${Math.random() * -15 - 5}%`;
+                 particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                 const opacity = Math.random() * (animationName === 'float-particle-loading' ? 0.6 : 0.5) + 0.1;
+                 particle.style.setProperty('--particle-opacity', opacity);
+                 particle.style.setProperty('--particle-opacity-mid', opacity * 0.7);
+                 particle.style.setProperty('--particle-opacity-end', opacity * 0.2);
+                 const duration = Math.random() * (animationName === 'float-particle-loading' ? 10 : 15) + 10;
+                 const delay = Math.random() * (animationName === 'float-particle-loading' ? 5 : 10);
+                 const xStart = (Math.random() - 0.5) * 50;
+                 const xEnd = xStart + (Math.random() - 0.5) * (animationName === 'float-particle-loading' ? 100 : 200);
+                 particle.style.setProperty('--x-start', `${xStart}px`);
+                 particle.style.setProperty('--x-end', `${xEnd}px`);
+                 particle.style.animation = `${animationName} ${duration}s linear ${delay}s infinite`;
+                 container.appendChild(particle);
+             }
+         }
+
+         // --- Utility to safely get theme colors ---
+         function getThemeColor(variableName, fallbackColor) {
+             // Ensure DOM is ready before accessing computed style
+             if (document.readyState !== 'loading') {
+                 return getComputedStyle(document.documentElement).getPropertyValue(variableName).trim() || fallbackColor;
+             }
+             return fallbackColor; // Return fallback if DOM not ready
+         }
+
+        // --- Loading Screen Logic ---
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM Loaded. Setting up loading screen.");
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingContainer = document.querySelector('#loading-screen .loading-container');
+            const loadingProgress = document.getElementById('loading-progress');
+            const loadingPercentage = document.getElementById('loading-percentage');
+            const loadingMessage = document.getElementById('loading-message');
+            const loadingComplete = document.getElementById('loading-complete');
+            const enterSiteBtn = document.getElementById('enter-site-btn');
+            const loadingBackground = document.getElementById('loading-background');
+
+            // Check if essential elements exist
+            if (!loadingScreen || !loadingContainer || !loadingProgress || !loadingPercentage || !loadingMessage || !loadingComplete || !enterSiteBtn) {
+                console.error("One or more loading screen elements are missing! Bypassing loading screen.");
+                if(loadingScreen) loadingScreen.classList.add('hidden'); // Hide immediately
+                initializeSite(); // Try to initialize site anyway
+                return;
+            }
+
+            // Create loading particles
+            createParticles(loadingBackground, 'float-particle-loading', 30);
+
+            const messages = [ /* ... Keep loading messages ... */
+                 { progress: 0, text: "Initializing exploit database" }, { progress: 15, text: "Loading core modules" }, { progress: 30, text: "Bypassing Byfron heuristics" }, { progress: 45, text: "Establishing secure connection" }, { progress: 60, text: "Injecting necessary daemons" }, { progress: 75, text: "Finalizing exploit matrix" }, { progress: 90, text: "Almost ready..." }
+            ];
+            let progress = 0;
+            let intervalId = null;
+
+            function updateProgress() {
+                 progress += Math.random() * 4 + 1;
+                 if (progress >= 100) {
+                     progress = 100; clearInterval(intervalId);
+                     loadingProgress.style.width = `${progress}%`; loadingPercentage.textContent = `${Math.floor(progress)}%`;
+                     loadingMessage.textContent = "System Ready"; loadingMessage.style.opacity = 1;
+                     loadingContainer.style.opacity = 0;
+                     loadingContainer.addEventListener('transitionend', () => { if (loadingComplete) loadingComplete.classList.add('show'); }, { once: true });
+                 } else {
+                     loadingProgress.style.width = `${progress}%`; loadingPercentage.textContent = `${Math.floor(progress)}%`;
+                     const currentMessage = messages.findLast(msg => progress >= msg.progress);
+                     if (currentMessage && loadingMessage.textContent !== currentMessage.text) {
+                          loadingMessage.style.opacity = 0;
+                          setTimeout(() => { loadingMessage.textContent = currentMessage.text; loadingMessage.style.opacity = 1; }, 150);
+                     }
                  }
             }
+            intervalId = setInterval(updateProgress, 120 + Math.random() * 80);
 
-            // --- Theme Handling ---
-            function applyTheme(themeName) {
-                const themeClassName = `theme-${themeName}`;
-                const previousTheme = Array.from(body.classList).find(cls => allThemeClasses.includes(cls));
-                allThemeClasses.forEach(cls => body.classList.remove(cls));
-                body.classList.add(themeClassName);
-                themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); });
-                try { localStorage.setItem('selectedTheme', themeName); } catch (e) { console.warn("LS write failed:", e); }
-                if (themeName === 'red') {
-                    attemptAutoplayMusic();
-                } else if (previousTheme === 'theme-red' && themeName !== 'red') {
-                    pauseMusic();
-                }
-            }
-
-            // --- Initial Theme Load ---
-            let initialTheme = 'dark';
-            try {
-                const savedTheme = localStorage.getItem('selectedTheme');
-                if (savedTheme && allThemeClasses.includes(`theme-${savedTheme}`)) {
-                    initialTheme = savedTheme;
-                } else if (savedTheme) { localStorage.removeItem('selectedTheme'); }
-            } catch (e) { console.warn("LS read failed:", e); }
-            applyTheme(initialTheme);
-
-            // --- Theme Button Listeners ---
-            themeButtons.forEach(button => {
-                button.addEventListener('click', () => applyTheme(button.dataset.theme));
+            // Enter site button action
+            enterSiteBtn.addEventListener('click', function() {
+                console.log("Enter site clicked.");
+                loadingScreen.classList.add('hidden');
+                loadingScreen.addEventListener('transitionend', () => {
+                    initializeSite(); // Initialize the main site AFTER fade out
+                    // Optional: loadingScreen.remove();
+                }, { once: true });
+                // Try starting background music on interaction (if needed for red theme)
+                const currentTheme = Array.from(document.body.classList).find(cls => cls.startsWith('theme-'));
+                 if (currentTheme === 'theme-red') {
+                    const bgMusic = document.getElementById('background-music');
+                    if (bgMusic && bgMusic.paused) { togglePlay(); } // Call togglePlay if defined
+                 }
             });
+        });
 
-            // --- Tab Handling ---
-            const tabButtons = document.querySelectorAll('.tab-btn');
-            const tabPanels = document.querySelectorAll('.tab-content');
-            const defaultTab = 'verification';
-            const initialActiveButton = document.querySelector(`.tab-btn[data-tab="${defaultTab}"]`);
-            const initialActivePanel = document.getElementById(`${defaultTab}-panel`);
-            tabPanels.forEach(panel => panel.classList.add('hidden'));
-            if (initialActiveButton && initialActivePanel) { initialActiveButton.classList.add('tab-active'); initialActivePanel.classList.remove('hidden'); } else { if(tabButtons.length > 0 && tabPanels.length > 0) { tabButtons[0].classList.add('tab-active'); tabPanels[0].classList.remove('hidden'); } }
-            // Handle clicking tab links inside content (like from Security to Verification)
-            document.querySelectorAll('a.tab-link').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault(); // Prevent default anchor behavior
-                    const targetTabId = link.getAttribute('href').substring(1); // Get 'verification-panel' from '#verification-panel'
-                    const targetTabButton = document.querySelector(`.tab-btn[data-tab="${targetTabId.replace('-panel','')}"]`);
-                    if (targetTabButton) {
-                        targetTabButton.click(); // Simulate click on the corresponding tab button
-                         // Optional: Smooth scroll to the top of the main content area
-                        document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
-                    }
-                });
-            });
-             // Regular tab button listeners
-            tabButtons.forEach(button => { button.addEventListener('click', () => { const tabId = button.dataset.tab; tabButtons.forEach(btn => btn.classList.remove('tab-active')); tabPanels.forEach(panel => panel.classList.add('hidden')); button.classList.add('tab-active'); const targetPanel = document.getElementById(`${tabId}-panel`); if (targetPanel) { targetPanel.classList.remove('hidden'); } }); });
 
-            // --- Music Controls (Manual Toggle & Volume) ---
-             if (musicControlsContainer && backgroundMusic && volumeSlider) {
-                 backgroundMusic.volume = volumeSlider.value;
-                 if (musicToggleBtn && musicIcon) {
-                    musicToggleBtn.addEventListener('click', () => {
-                        if (backgroundMusic.paused) { backgroundMusic.play().catch(e => console.error("Manual play failed:", e)); } else { backgroundMusic.pause(); }
-                    });
-                    backgroundMusic.onplay = () => { musicIcon.className = 'fas fa-pause'; };
-                    backgroundMusic.onpause = () => { musicIcon.className = 'fas fa-play'; };
-                    backgroundMusic.onended = () => { musicIcon.className = 'fas fa-play'; };
-                    musicIcon.className = backgroundMusic.paused ? 'fas fa-play' : 'fas fa-pause';
-                }
-                volumeSlider.addEventListener('input', (e) => { backgroundMusic.volume = e.target.value; });
-            } else { console.error("Music player or container elements not found."); }
+        // --- Tab Handling ---
+        function initializeTabs() {
+             const tabButtons = document.querySelectorAll('.tab-btn[data-tab]');
+             const tabPanels = document.querySelectorAll('.tab-content');
+             const mainContentArea = document.querySelector('main');
 
-            // --- Code Block Copy Button Logic ---
-            function addCopyButtons() {
-                const codeBlocks = document.querySelectorAll('pre.code-block'); codeBlocks.forEach(block => { if (block.querySelector('.copy-btn')) return; const button = document.createElement('button'); button.className = 'copy-btn'; button.innerHTML = '<i class="fas fa-copy"></i> Copy'; block.appendChild(button); button.addEventListener('click', async () => { const codeElement = block.querySelector('code'); if (!codeElement) return; const codeToCopy = codeElement.textContent || ""; try { await navigator.clipboard.writeText(codeToCopy); button.innerHTML = '<i class="fas fa-check"></i> Copied!'; button.classList.add('copied'); setTimeout(() => { button.innerHTML = '<i class="fas fa-copy"></i> Copy'; button.classList.remove('copied'); }, 2000); } catch (err) { console.error('Failed to copy text: ', err); button.textContent = 'Error'; setTimeout(() => { button.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2000); } }); });
-            }
-            addCopyButtons();
+             const showTab = (tabId) => {
+                  if (!tabId) return;
+                  tabButtons.forEach(btn => {
+                      const isActive = btn.dataset.tab === tabId;
+                      btn.classList.toggle('tab-active', isActive);
+                      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                  });
+                  tabPanels.forEach(panel => {
+                       const isTarget = panel.id === `${tabId}-panel`;
+                       panel.classList.toggle('hidden', !isTarget);
+                  });
+                  if (mainContentArea && mainContentArea.scrollTop > 0) { // Only scroll if not already at top
+                       mainContentArea.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                  // Highlight code in the newly shown panel
+                  const targetPanel = document.getElementById(`${tabId}-panel`);
+                  if (targetPanel && typeof Prism !== 'undefined') {
+                      Prism.highlightAllUnder(targetPanel);
+                  }
+             };
 
-        }); // End DOMContentLoaded
+             // Initial Tab Activation
+             const defaultTab = 'verification';
+             const initialActiveButton = document.querySelector(`.tab-btn[data-tab="${defaultTab}"]`);
+             if (initialActiveButton) {
+                  showTab(defaultTab);
+             } else if (tabButtons.length > 0) {
+                  showTab(tabButtons[0].dataset.tab);
+             }
+
+             // Add listeners and ARIA setup
+             tabButtons.forEach(button => {
+                  button.setAttribute('role', 'tab');
+                  button.setAttribute('id', `${button.dataset.tab}-tab-button`);
+                  const panelId = `${button.dataset.tab}-panel`;
+                  button.setAttribute('aria-controls', panelId);
+                  const panel = document.getElementById(panelId);
+                  if (panel) { panel.setAttribute('aria-labelledby', `${button.dataset.tab}-tab-button`); panel.setAttribute('role', 'tabpanel');}
+
+                  button.addEventListener('click', () => { showTab(button.dataset.tab); });
+             });
+
+              // Handle internal tab links
+              document.querySelectorAll('a.tab-link').forEach(link => {
+                  link.addEventListener('click', (e) => {
+                      e.preventDefault();
+                      const targetPanelId = link.getAttribute('href').substring(1);
+                      const targetTabId = targetPanelId.replace('-panel','');
+                      showTab(targetTabId);
+                      if (mainContentArea) { mainContentArea.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+                  });
+              });
+        }
+
+        // --- Theme Switcher ---
+        function initializeThemeSwitcher() {
+              const themeButtons = document.querySelectorAll('.theme-btn[data-theme]');
+              const body = document.body;
+              const particlesContainer = document.getElementById('particles');
+              const allThemeClasses = ['theme-dark', 'theme-purple', 'theme-red', 'theme-blue', 'theme-matrix'];
+
+              const applyTheme = (themeName) => {
+                  const themeClassName = `theme-${themeName}`;
+                  const previousTheme = Array.from(body.classList).find(cls => allThemeClasses.includes(cls));
+                  allThemeClasses.forEach(cls => body.classList.remove(cls));
+                  body.classList.add(themeClassName);
+                  themeButtons.forEach(btn => { btn.classList.toggle('active', btn.dataset.theme === themeName); });
+                  try { localStorage.setItem('selectedTheme', themeName); } catch (e) { console.warn("LS write failed:", e); }
+
+                   // Regenerate particles for the new theme AFTER styles applied
+                  setTimeout(() => {
+                     createParticles(particlesContainer, 'float-particle-main', 50);
+                  }, 50); // Small delay to ensure theme vars are updated
+
+                  // Music handling
+                  const backgroundMusic = document.getElementById('background-music');
+                  if (themeName === 'red') {
+                      if (backgroundMusic && backgroundMusic.paused) {
+                          backgroundMusic.play().catch(e => console.warn(`Autoplay failed: ${e.name}`));
+                      }
+                  } else if (previousTheme === 'theme-red') {
+                      if (backgroundMusic && !backgroundMusic.paused) { backgroundMusic.pause(); }
+                  }
+              };
+
+              let initialTheme = 'dark';
+              try {
+                  const savedTheme = localStorage.getItem('selectedTheme');
+                  if (savedTheme && allThemeClasses.includes(`theme-${savedTheme}`)) { initialTheme = savedTheme; }
+                  else if (savedTheme) { localStorage.removeItem('selectedTheme'); }
+              } catch (e) { console.warn("LS read failed:", e); }
+              applyTheme(initialTheme); // Apply initially stored/default theme
+
+              themeButtons.forEach(button => {
+                  button.addEventListener('click', () => applyTheme(button.dataset.theme));
+              });
+        }
+
+        // --- Music Player ---
+        let isPlaying = false; // Keep track of intended play state
+
+        function togglePlay() { // Renamed for clarity if called elsewhere
+             const backgroundMusic = document.getElementById('background-music');
+             const musicToggleBtn = document.getElementById('music-toggle-btn');
+             if (!backgroundMusic || !musicToggleBtn) return;
+
+             if (backgroundMusic.paused) {
+                 backgroundMusic.play().catch(e => console.error("Manual play failed:", e));
+             } else {
+                 backgroundMusic.pause();
+             }
+             // State is updated via event listeners below
+        }
+
+        function initializeMusicPlayer() {
+              const backgroundMusic = document.getElementById('background-music');
+              const musicToggleBtn = document.getElementById('music-toggle-btn');
+              const musicIcon = document.getElementById('music-icon');
+              const volumeSlider = document.getElementById('volume-slider');
+
+              if (!backgroundMusic || !volumeSlider || !musicToggleBtn || !musicIcon) {
+                  console.error("Music player elements not found.");
+                   const musicContainer = document.getElementById('music-controls-container');
+                   if (musicContainer) musicContainer.style.display = 'none'; // Hide if broken
+                   return;
+              }
+
+              // Initial setup
+              backgroundMusic.volume = parseFloat(volumeSlider.value);
+              isPlaying = !backgroundMusic.paused; // Sync initial state
+              musicIcon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+
+              // Listeners
+              musicToggleBtn.addEventListener('click', togglePlay);
+              volumeSlider.addEventListener('input', (e) => { backgroundMusic.volume = parseFloat(e.target.value); });
+              backgroundMusic.addEventListener('play', () => { isPlaying = true; musicIcon.className = 'fas fa-pause'; });
+              backgroundMusic.addEventListener('pause', () => { isPlaying = false; musicIcon.className = 'fas fa-play'; });
+              backgroundMusic.addEventListener('ended', () => { isPlaying = false; musicIcon.className = 'fas fa-play'; }); // Reset on end
+        }
+
+
+        // --- Code Block Copy Button Logic ---
+        function initializeCopyButtons() {
+              document.querySelectorAll('pre.code-block').forEach(block => {
+                   if (block.querySelector('.copy-btn')) return; // Skip if already added
+                   const button = document.createElement('button');
+                   button.className = 'copy-btn';
+                   button.innerHTML = '<i class="fas fa-copy mr-1"></i>Copy';
+                   button.setAttribute('aria-label', 'Copy code snippet');
+                   block.appendChild(button);
+
+                   button.addEventListener('click', async () => {
+                       const codeElement = block.querySelector('code');
+                       if (!codeElement) return;
+                       const codeToCopy = codeElement.textContent || "";
+                       try {
+                           await navigator.clipboard.writeText(codeToCopy);
+                           button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                           button.classList.add('copied'); button.disabled = true;
+                           setTimeout(() => {
+                               button.innerHTML = '<i class="fas fa-copy mr-1"></i>Copy';
+                               button.classList.remove('copied'); button.disabled = false;
+                           }, 2000);
+                       } catch (err) {
+                           console.error('Failed to copy text: ', err); button.textContent = 'Error';
+                           setTimeout(() => { button.innerHTML = '<i class="fas fa-copy mr-1"></i>Copy'; }, 2000);
+                       }
+                   });
+              });
+        }
+
+        // --- Initial Code Highlighting ---
+        function highlightInitialCode() {
+             // Highlight all code initially after site is visible
+             if (typeof Prism !== 'undefined') {
+                 Prism.highlightAll();
+             } else {
+                  // Retry after a short delay if Prism wasn't ready
+                  setTimeout(() => {
+                       if (typeof Prism !== 'undefined') { Prism.highlightAll(); }
+                       else { console.warn("PrismJS not loaded after delay."); }
+                  }, 500);
+             }
+        }
+
     </script>
 
 </body>
